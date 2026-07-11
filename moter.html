@@ -1,0 +1,2752 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>موتر — توصيل فوري بالموتوسيكل</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          gray: {
+            50:'#FAFAFA',100:'#F4F4F5',150:'#EDEDED',200:'#E4E4E7',300:'#D4D4D8',
+            400:'#A1A1AA',500:'#71717A',600:'#52525B',700:'#3F3F46',800:'#27272A',
+            900:'#18181B',950:'#0A0A0A'
+          }
+        },
+        fontFamily: { sans: ['Cairo','sans-serif'] }
+      }
+    }
+  };
+</script>
+
+<style>
+  html { scrollbar-gutter: stable; }
+  html, body { font-family:'Cairo', sans-serif; background:#fff; overscroll-behavior-y: none; }
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  .scrollbar-hide::-webkit-scrollbar { display:none; }
+  .scrollbar-hide { -ms-overflow-style:none; scrollbar-width:none; }
+  #root { max-width: 480px; margin: 0 auto; min-height: 100vh; box-shadow: 0 0 60px rgba(0,0,0,0.06); overflow-x: hidden; position: relative; }
+  input, textarea, button { font-family:'Cairo', sans-serif; }
+
+  /* ── معايير احترافية موحّدة لكل الأزرار (إدارة / عميل / سائق) ── */
+  button { transition: transform .15s ease, opacity .15s ease, background-color .15s ease, box-shadow .15s ease; -webkit-user-select: none; user-select: none; }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+  button:focus-visible { outline: 2px solid rgba(10,10,10,.45); outline-offset: 2px; }
+
+  /* ── منع خروج أي نص عن حدود الشاشة أو الحقول ── */
+  body, #root, main, header, nav, div, p, span, h1, h2, h3 { min-width: 0; }
+  p, span, h1, h2, h3 { overflow-wrap: anywhere; word-break: break-word; }
+  input, textarea { min-width: 0; max-width: 100%; }
+
+  /* ── متغيرات الحدود (تتبدّل تلقائياً مع الوضع الليلي) ── */
+  :root{
+    --bc-a:#EFEFEF; --bc-b:#E8E8E8; --bc-c:#F5F5F5; --bc-d:#F0F0F0; --bc-e:#F8F8F8;
+    --ink:#0A0A0A; --app-bg:#FAFAFA;
+  }
+  [data-theme="dark"]{
+    --bc-a:#2A2A2E; --bc-b:#323236; --bc-c:#242428; --bc-d:#242428; --bc-e:#242428;
+    --ink:#FAFAFA; --app-bg:#0A0A0A; color-scheme: dark;
+  }
+
+  /* ── الوضع الليلي: تعطيل ألوان Tailwind الفاتحة تلقائياً عبر كل الشاشات ── */
+  [data-theme="dark"] body { background:#0A0A0A; }
+  [data-theme="dark"] #root { background:#0A0A0A; box-shadow: 0 0 60px rgba(0,0,0,0.4); }
+  [data-theme="dark"] .bg-white { background-color:#151517 !important; }
+  [data-theme="dark"] .bg-gray-50 { background-color:#1C1C1F !important; }
+  [data-theme="dark"] .bg-gray-100 { background-color:#242428 !important; }
+  [data-theme="dark"] .bg-gray-150 { background-color:#2A2A2E !important; }
+  [data-theme="dark"] .bg-gray-200 { background-color:#323236 !important; }
+  [data-theme="dark"] .text-gray-950 { color:#FAFAFA !important; }
+  [data-theme="dark"] .text-gray-900 { color:#F4F4F5 !important; }
+  [data-theme="dark"] .text-gray-700 { color:#D4D4D8 !important; }
+  [data-theme="dark"] .text-gray-600 { color:#B8B8BF !important; }
+  [data-theme="dark"] .text-gray-500 { color:#9A9AA2 !important; }
+  [data-theme="dark"] .text-gray-400 { color:#78787F !important; }
+  [data-theme="dark"] .text-gray-300 { color:#57575D !important; }
+  [data-theme="dark"] .border, [data-theme="dark"] .border-2, [data-theme="dark"] .border-t,
+  [data-theme="dark"] .border-b, [data-theme="dark"] .border-y { border-color:#26262A; }
+  [data-theme="dark"] .bg-green-50 { background-color:rgba(34,197,94,0.12) !important; }
+  [data-theme="dark"] .bg-blue-50 { background-color:rgba(59,130,246,0.12) !important; }
+  [data-theme="dark"] .bg-red-50 { background-color:rgba(239,68,68,0.12) !important; }
+  [data-theme="dark"] .bg-amber-50 { background-color:rgba(245,158,11,0.12) !important; }
+  [data-theme="dark"] .border-green-100 { border-color:rgba(34,197,94,0.25) !important; }
+  [data-theme="dark"] .border-blue-100 { border-color:rgba(59,130,246,0.25) !important; }
+  [data-theme="dark"] .border-red-100 { border-color:rgba(239,68,68,0.25) !important; }
+  [data-theme="dark"] .text-green-700, [data-theme="dark"] .text-green-800, [data-theme="dark"] .text-green-900,
+  [data-theme="dark"] .text-green-600 { color:#4ADE80 !important; }
+  [data-theme="dark"] .text-blue-900, [data-theme="dark"] .text-blue-600, [data-theme="dark"] .text-blue-500 { color:#60A5FA !important; }
+  [data-theme="dark"] .text-red-600, [data-theme="dark"] .text-red-800, [data-theme="dark"] .text-red-500 { color:#F87171 !important; }
+  [data-theme="dark"] .text-amber-700 { color:#FBBF24 !important; }
+  [data-theme="dark"] input, [data-theme="dark"] textarea { background:transparent; color:#FAFAFA; }
+  [data-theme="dark"] input::placeholder, [data-theme="dark"] textarea::placeholder { color:#54545A; }
+  [data-theme="dark"] .placeholder-gray-300::placeholder { color:#54545A !important; }
+
+  /* ── سبلاش الشاشة الأولية ── */
+  @keyframes moterFadeOut { 0%,70%{opacity:1} 100%{opacity:0} }
+  @keyframes moterPop { 0%{transform:scale(.7);opacity:0} 60%{transform:scale(1.06);opacity:1} 100%{transform:scale(1)} }
+  .moter-splash { position:fixed; inset:0; z-index:100; background:#0A0A0A; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; animation:moterFadeOut 1.3s ease forwards; }
+  .moter-splash-icon { animation:moterPop .6s ease; }
+
+  /* ── مؤشر تحميل دوّار ── */
+  @keyframes moterSpin { to { transform:rotate(360deg); } }
+  .moter-spinner { display:inline-block; width:1em; height:1em; border:2.5px solid rgba(255,255,255,.35);
+    border-top-color:#fff; border-radius:50%; animation:moterSpin .7s linear infinite; }
+  .moter-spinner-dark { border:2.5px solid rgba(10,10,10,.2); border-top-color:#0A0A0A; }
+
+  /* ── تنبيه خطأ التحقق من الحقول ── */
+  .moter-field-error { color:#EF4444; font-size:12px; font-weight:700; margin-top:6px; display:flex; align-items:center; gap:4px; }
+  [data-theme="dark"] .moter-field-error { color:#F87171; }
+
+  /* ── نظام تتبّع الطلب بالخط الزمني (Timeline) — نبضة الخطوة الحالية ── */
+  @keyframes moterTlPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(10,10,10,.16); } 50%{ box-shadow:0 0 0 7px rgba(10,10,10,0); } }
+  .moter-tl-pulse { animation: moterTlPulse 1.8s ease-in-out infinite; }
+  [data-theme="dark"] .moter-tl-pulse { animation-name: moterTlPulseDark; }
+  @keyframes moterTlPulseDark { 0%,100%{ box-shadow:0 0 0 0 rgba(250,250,250,.14); } 50%{ box-shadow:0 0 0 7px rgba(250,250,250,0); } }
+
+  /* ── تنبيهات Toast خفيفة ── */
+  @keyframes moterToastIn { 0%{ transform:translateY(14px) scale(.96); opacity:0; } 100%{ transform:translateY(0) scale(1); opacity:1; } }
+  .moter-toast { animation: moterToastIn .28s cubic-bezier(.2,.8,.3,1); }
+
+  /* ── هياكل تحميل (Skeleton) ── */
+  @keyframes moterShimmer { 0%{ background-position:-200% 0; } 100%{ background-position:200% 0; } }
+  .moter-skeleton { background:linear-gradient(90deg, #EDEDED 25%, #F6F6F6 37%, #EDEDED 63%); background-size:400% 100%;
+    animation:moterShimmer 1.4s ease infinite; border-radius:12px; }
+  [data-theme="dark"] .moter-skeleton { background:linear-gradient(90deg, #242428 25%, #2C2C30 37%, #242428 63%); background-size:400% 100%; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     REFINEMENT PASS — same neutral palette, elevated precision.
+     Pure additions: new tokens + selectors on existing class combos.
+     Nothing below overrides component logic or removes a rule above.
+  ══════════════════════════════════════════════════════════════════ */
+
+  :root{
+    --ease-premium: cubic-bezier(.16,1,.3,1);
+    --shadow-xs:    0 1px 2px rgba(10,10,10,.05);
+    --shadow-card:      0 1px 2px rgba(10,10,10,.04), 0 10px 26px -14px rgba(10,10,10,.14);
+    --shadow-card-hover:0 1px 2px rgba(10,10,10,.05), 0 16px 36px -14px rgba(10,10,10,.20);
+    --shadow-float: 0 4px 10px rgba(10,10,10,.10), 0 26px 50px -16px rgba(10,10,10,.26);
+    --shadow-btn:       0 1px 2px rgba(10,10,10,.08), 0 8px 18px -7px rgba(10,10,10,.32);
+    --grad-ink: linear-gradient(180deg, #17181D 0%, #0A0A0A 100%);
+  }
+  [data-theme="dark"]{
+    --shadow-xs:    0 1px 2px rgba(0,0,0,.35);
+    --shadow-card:      0 1px 2px rgba(0,0,0,.3), 0 10px 26px -14px rgba(0,0,0,.55);
+    --shadow-card-hover:0 1px 2px rgba(0,0,0,.3), 0 16px 36px -14px rgba(0,0,0,.6);
+    --shadow-float: 0 4px 10px rgba(0,0,0,.45), 0 28px 54px -16px rgba(0,0,0,.75);
+    --shadow-btn:       0 1px 2px rgba(0,0,0,.3), 0 10px 22px -7px rgba(0,0,0,.55);
+    --grad-ink: linear-gradient(180deg, #1E1F24 0%, #0E0E10 100%);
+  }
+
+  /* every white card/panel gets real, soft elevation instead of a flat border */
+  .bg-white.border.rounded-2xl, .bg-white.border.rounded-3xl,
+  .bg-white.rounded-2xl.border, .bg-white.rounded-3xl.border,
+  .bg-white.rounded-2xl.overflow-hidden.border, .bg-white.rounded-xl.border {
+    box-shadow: var(--shadow-card);
+    transition: box-shadow .28s var(--ease-premium), transform .28s var(--ease-premium);
+  }
+  [data-theme="dark"] .bg-white.border.rounded-2xl, [data-theme="dark"] .bg-white.border.rounded-3xl,
+  [data-theme="dark"] .bg-white.rounded-2xl.border, [data-theme="dark"] .bg-white.rounded-3xl.border,
+  [data-theme="dark"] .bg-white.rounded-2xl.overflow-hidden.border, [data-theme="dark"] .bg-white.rounded-xl.border {
+    box-shadow: var(--shadow-card);
+  }
+
+  /* primary black actions: quiet luminance gradient + a real shadow instead of flat ink */
+  button.bg-gray-950.text-white, a.bg-gray-950.text-white {
+    background-image: var(--grad-ink);
+    box-shadow: var(--shadow-btn);
+  }
+  button.bg-gray-950.text-white:active, a.bg-gray-950.text-white:active { box-shadow: var(--shadow-xs); }
+
+  /* sheets + confirm dialogs float with real depth above the scrim */
+  .fixed.inset-0.z-50 .rounded-3xl, .fixed.inset-0 .rounded-3xl { box-shadow: var(--shadow-float); }
+
+  /* quiet fade + rise on every screen change, app-wide (see key={view} on shell wrappers) */
+  @keyframes moterViewEnter { from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:translateY(0);} }
+  .view-transition { animation: moterViewEnter .42s var(--ease-premium); }
+
+  /* staggered entrance for the role picker on the welcome screen */
+  @keyframes moterRoleIn { from{ opacity:0; transform:translateY(14px) scale(.98);} to{ opacity:1; transform:translateY(0) scale(1);} }
+  .role-stagger button { animation: moterRoleIn .5s var(--ease-premium) backwards; }
+  .role-stagger button:nth-of-type(1){ animation-delay:.05s; }
+  .role-stagger button:nth-of-type(2){ animation-delay:.13s; }
+  .role-stagger button:nth-of-type(3){ animation-delay:.21s; }
+
+  /* more considered splash: soft depth on the mark, gentle text rise */
+  .moter-splash-icon { box-shadow: 0 20px 44px -12px rgba(0,0,0,.55); }
+  @keyframes moterTextIn { from{ opacity:0; transform:translateY(7px);} to{ opacity:1; transform:translateY(0);} }
+  .moter-splash h1 { animation: moterTextIn .5s var(--ease-premium) .22s backwards; }
+
+  /* subtle precision: crisper focus ring, calmer disabled state */
+  button:focus-visible, a:focus-visible { outline-offset: 3px; }
+
+  /* welcome hero: quiet radial depth behind the mark instead of a flat block */
+  .hero-surface { position:relative; overflow:hidden; }
+  .hero-surface::before {
+    content:''; position:absolute; inset:-20% -20% auto -20%; height:75%;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.10), rgba(255,255,255,0) 68%);
+    pointer-events:none;
+  }
+  .hero-surface > * { position:relative; }
+
+  @media (prefers-reduced-motion: reduce){
+    .view-transition, .role-stagger button, .moter-splash h1, .moter-splash-icon, .moter-tl-pulse { animation:none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef } = React;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ICONS — مكتبة أيقونات SVG خفيفة الوزن (لا تعتمد على مكتبات خارجية للأيقونات)
+// ══════════════════════════════════════════════════════════════════════════════
+function makeIcon(paths, extraViewBox) {
+  return function Icon({ size = 20, strokeWidth = 2, className = "", style = {} }) {
+    return (
+      <svg width={size} height={size} viewBox={extraViewBox || "0 0 24 24"} fill="none"
+        stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
+        className={className} style={style}>
+        {paths}
+      </svg>
+    );
+  };
+}
+
+const Home = makeIcon(<><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></>);
+const User = makeIcon(<><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></>);
+const Users = makeIcon(<><circle cx="9" cy="8" r="3.2"/><path d="M2.5 21c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15 15.2c2.7.3 5 2.1 5 5.3"/></>);
+const Bike = makeIcon(<><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M12 17.5l2-9h4M12 17.5l-4-6-2 6M8 8.5h3l2 3"/></>);
+const Package = makeIcon(<><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></>);
+const Settings = makeIcon(<><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.2-1.6l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2.7-1.6L13.4 2h-2.8l-.4 2.8a7 7 0 0 0-2.7 1.6l-2.3-.9-2 3.4 2 1.5A7 7 0 0 0 4.8 12a7 7 0 0 0 .2 1.6l-2 1.6 2 3.4 2.3-1a7 7 0 0 0 2.7 1.6l.4 2.8h2.8l.4-2.8a7 7 0 0 0 2.7-1.6l2.3 1 2-3.4-2-1.6c.1-.5.2-1 .2-1.6z"/></>);
+const LogOut = makeIcon(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></>);
+const Bell = makeIcon(<><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></>);
+const TrendingUp = makeIcon(<><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></>);
+const Clock = makeIcon(<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></>);
+const DollarSign = makeIcon(<><path d="M12 2v20"/><path d="M17 6.5c0-1.8-2-3-5-3s-5 1.3-5 3 2 2.8 5 3.3 5 1.7 5 3.4-2 3-5 3-5-1.2-5-3"/></>);
+const ChevronRight = makeIcon(<path d="M9 6l6 6-6 6"/>);
+const Star = makeIcon(<path d="M12 2l3 6.5 7 .8-5.2 4.8L18 21l-6-3.6L6 21l1.2-6.9L2 9.3l7-.8z"/>);
+const Navigation = makeIcon(<path d="M12 2l8 20-8-4-8 4z"/>);
+const Phone = makeIcon(<path d="M5 4h4l1.5 4.5-2 1.5a12 12 0 0 0 6 6l1.5-2 4.5 1.5V19a2 2 0 0 1-2.2 2C10 20.5 3.5 14 3 5.2A2 2 0 0 1 5 4z"/>);
+const Check = makeIcon(<path d="M20 6L9 17l-5-5"/>);
+const X = makeIcon(<><path d="M18 6L6 18"/><path d="M6 6l12 12"/></>);
+const Plus = makeIcon(<><path d="M12 5v14"/><path d="M5 12h14"/></>);
+const History = makeIcon(<><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/><path d="M12 7v5l4 2"/></>);
+const ArrowLeft = makeIcon(<><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></>);
+const BarChart2 = makeIcon(<path d="M6 20V10M12 20V4M18 20v-6"/>);
+const CheckCircle = makeIcon(<><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></>);
+const Eye = makeIcon(<><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></>);
+const EyeOff = makeIcon(<><path d="M3 3l18 18"/><path d="M10.6 5.2A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a15.4 15.4 0 0 1-3.2 4.1M6.5 6.6C4 8.3 2 12 2 12s3.5 7 10 7a10 10 0 0 0 4-.8"/><path d="M9.5 9.7A3 3 0 0 0 12 15a3 3 0 0 0 2.6-1.5"/></>);
+const Wallet = makeIcon(<><path d="M3 7a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M16 12h4v3h-4a1.5 1.5 0 0 1 0-3z"/></>);
+const AlertCircle = makeIcon(<><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5h.01"/></>);
+const Shield = makeIcon(<path d="M12 2l8 3.5v6c0 5-3.5 8.5-8 10.5-4.5-2-8-5.5-8-10.5v-6z"/>);
+const Truck = makeIcon(<><path d="M3 6h11v9H3z"/><path d="M14 9h4l3 3v3h-7z"/><circle cx="7" cy="17.5" r="1.6"/><circle cx="18" cy="17.5" r="1.6"/></>);
+const RefreshCw = makeIcon(<><path d="M21 12a9 9 0 0 1-15.4 6.4L3 16"/><path d="M3 12a9 9 0 0 1 15.4-6.4L21 8"/><path d="M3 16v4h4"/><path d="M21 8V4h-4"/></>);
+const ToggleLeft = makeIcon(<><rect x="2" y="7" width="20" height="10" rx="5"/><circle cx="8" cy="12" r="3"/></>);
+const MapPin = makeIcon(<><path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></>);
+const SearchIcon = makeIcon(<><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></>);
+const Sun = makeIcon(<><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M2.5 12H5M19 12h2.5M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></>);
+const Moon = makeIcon(<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>);
+const CreditCard = makeIcon(<><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/></>);
+const Tag = makeIcon(<><path d="M20.5 12.7L12.7 20.5a2 2 0 0 1-2.83 0l-6.37-6.37a2 2 0 0 1 0-2.83L11.3 3.5A2 2 0 0 1 12.7 3H19a1 1 0 0 1 1 1v6.3a2 2 0 0 1-.5 1.4z"/><circle cx="15.5" cy="7.5" r="1.4"/></>);
+const Copy = makeIcon(<><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M5 15.5H4a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></>);
+const XCircle = makeIcon(<><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5l5 5M14.5 9.5l-5 5"/></>);
+const Landmark = makeIcon(<><path d="M3 21h18"/><path d="M4 21V10M9 21V10M15 21V10M20 21V10"/><path d="M2 10l10-6 10 6"/></>);
+const ArrowDownCircle = makeIcon(<><circle cx="12" cy="12" r="9"/><path d="M12 7v8M8.5 12l3.5 3.5L15.5 12"/></>);
+const Camera = makeIcon(<><path d="M4 8h3l1.5-2.5h7L17 8h3a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 8z"/><circle cx="12" cy="14" r="3.6"/></>);
+const UserCheck = makeIcon(<><circle cx="9" cy="8" r="4"/><path d="M2.5 21c0-4 3-6.5 6.5-6.5 1 0 2 .2 2.8.6"/><path d="M15.5 15.5l2 2 4-4"/></>);
+
+// شعار Google الرسمي متعدد الألوان (للاستخدام في زر "المتابعة عبر Google")
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DATA — أحياء حقيقية بالخرطوم الكبرى (الخرطوم/أمدرمان/بحري)، سائقون، طلبات، تسعير
+// ══════════════════════════════════════════════════════════════════════════════
+const NEIGHBORHOODS = [
+  { name:"السوق العربي",   lat:15.592, lng:32.532 },
+  { name:"الخرطوم 2",      lat:15.578, lng:32.535 },
+  { name:"العمارات",       lat:15.556, lng:32.548 },
+  { name:"الرياض",         lat:15.548, lng:32.575 },
+  { name:"بري",            lat:15.560, lng:32.585 },
+  { name:"الطائف",         lat:15.530, lng:32.595 },
+  { name:"الأزهري",        lat:15.535, lng:32.550 },
+  { name:"أركويت",         lat:15.470, lng:32.560 },
+  { name:"المقرن",         lat:15.589, lng:32.573 },
+  { name:"الجريف غرب",     lat:15.560, lng:32.560 },
+  { name:"كلاكلة",         lat:15.450, lng:32.530 },
+  { name:"سوبا",           lat:15.440, lng:32.620 },
+  { name:"أمدرمان",        lat:15.644, lng:32.478 },
+  { name:"الثورة",         lat:15.630, lng:32.460 },
+  { name:"الملازمين",      lat:15.660, lng:32.490 },
+  { name:"أبو روف",        lat:15.635, lng:32.495 },
+  { name:"الموردة",        lat:15.625, lng:32.505 },
+  { name:"ود نوباوي",      lat:15.615, lng:32.470 },
+  { name:"بحري",           lat:15.617, lng:32.533 },
+  { name:"المنشية",        lat:15.585, lng:32.533 },
+  { name:"الكدرو",         lat:15.660, lng:32.560 },
+  { name:"الحلفايا",       lat:15.650, lng:32.540 },
+  { name:"شرق النيل",      lat:15.620, lng:32.610 },
+  { name:"الحاج يوسف",     lat:15.650, lng:32.580 },
+  { name:"كافوري",         lat:15.600, lng:32.570 },
+];
+
+const PRICING = { km: 12, min: 20 }; // سعر الكيلومتر والحد الأدنى للطلب
+
+const DELIVERY_TYPES = [
+  { id:"parcel",     emoji:"📦", label:"طرد",   desc:"حتى 5 كغ",     multiplier:1.00 },
+  { id:"food",       emoji:"🍕", label:"طعام",  desc:"من المطعم",     multiplier:1.15 },
+  { id:"pharmacy",   emoji:"💊", label:"أدوية", desc:"صيدليات",      multiplier:1.05 },
+  { id:"documents",  emoji:"📄", label:"وثائق", desc:"مستندات مهمة", multiplier:0.90 },
+  { id:"groceries",  emoji:"🛒", label:"بقالة", desc:"من السوق",      multiplier:1.20 },
+];
+
+const PAYMENT_METHODS = [
+  { id:"cash",     label:"الدفع عند الاستلام", desc:"نقداً لليد عند التسليم",              Icon:Wallet     },
+  { id:"bankak",   label:"بنكك (Bankak)",      desc:"تحويل فوري عبر تطبيق بنك الخرطوم",   Icon:CreditCard },
+  { id:"transfer", label:"تحويل بنكي",         desc:"حوالة مباشرة لحساب موتر",             Icon:Landmark   },
+];
+
+const PROMO_CODES = [
+  { code:"MOTER10",   type:"percent", value:10, label:"خصم 10% لأول طلب",  active:true  },
+  { code:"FIX15",     type:"fixed",   value:15, label:"خصم 15 ج.س",        active:true  },
+  { code:"RAMADAN20", type:"percent", value:20, label:"عرض رمضان",         active:false },
+];
+
+// ── حالة عرض موحّدة لكل شارات الطلبات/السائقين ────────────────────────────────
+const ST = {
+  pending:    { label:"قيد الانتظار",  dot:"bg-amber-400",  text:"text-amber-700",  bg:"bg-amber-50"  },
+  in_transit: { label:"جاري التوصيل",  dot:"bg-blue-500",   text:"text-blue-700",   bg:"bg-blue-50"   },
+  delivered:  { label:"تم التوصيل",   dot:"bg-green-500",  text:"text-green-700",  bg:"bg-green-50"  },
+  cancelled:  { label:"ملغي",         dot:"bg-red-400",    text:"text-red-700",    bg:"bg-red-50"    },
+  available:  { label:"متاح",         dot:"bg-green-500",  text:"text-green-700",  bg:"bg-green-50"  },
+  busy:       { label:"مشغول",        dot:"bg-blue-500",   text:"text-blue-700",   bg:"bg-blue-50"   },
+  offline:    { label:"غير متصل",     dot:"bg-gray-400",   text:"text-gray-500",   bg:"bg-gray-100"  },
+};
+
+// ── دوال مساعدة: تحديد الموقع الجغرافي، حساب المسافة، والتسعير الحي ───────────
+function resolveNeighborhood(name) {
+  if (!name) return NEIGHBORHOODS[0];
+  const trimmed = String(name).trim();
+  const exact = NEIGHBORHOODS.find(n => n.name === trimmed);
+  if (exact) return exact;
+  const partial = NEIGHBORHOODS.find(n => trimmed.includes(n.name) || n.name.includes(trimmed));
+  if (partial) return partial;
+  let hash = 0;
+  for (let i = 0; i < trimmed.length; i++) hash = (hash * 31 + trimmed.charCodeAt(i)) >>> 0;
+  const latOffset = ((hash % 1000) / 1000 - 0.5) * 0.18;
+  const lngOffset = (((hash >> 8) % 1000) / 1000 - 0.5) * 0.18;
+  return { name: trimmed, lat: 15.55 + latOffset, lng: 32.53 + lngOffset };
+}
+
+function haversineKm(a, b) {
+  if (!a || !b) return 0;
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const lat1 = a.lat * Math.PI / 180, lat2 = b.lat * Math.PI / 180;
+  const h = Math.sin(dLat/2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng/2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+function getPricingSettings() {
+  return PRICING;
+}
+
+function calcDeliveryPrice(distanceKm, deliveryTypeId) {
+  const pricing = getPricingSettings();
+  const type = DELIVERY_TYPES.find(t => t.id === deliveryTypeId) || DELIVERY_TYPES[0];
+  const raw = distanceKm * pricing.km * (type.multiplier || 1);
+  return Math.max(Math.round(raw), pricing.min);
+}
+
+function applyPromoCode(amount, codeInput) {
+  const clean = (codeInput || "").trim().toUpperCase();
+  if (!clean) return { finalAmount: amount, discount: 0, error: null, label: null };
+  const promo = PROMO_CODES.find(p => p.code === clean);
+  if (!promo) return { finalAmount: amount, discount: 0, error: "كود الخصم غير صحيح", label: null };
+  if (!promo.active) return { finalAmount: amount, discount: 0, error: "هذا الكود منتهي الصلاحية", label: null };
+  const discount = promo.type === "percent" ? Math.round(amount * promo.value / 100) : promo.value;
+  const finalAmount = Math.max(amount - discount, 0);
+  return { finalAmount, discount, error: null, label: promo.label };
+}
+
+function driverStats(driverId, orders) {
+  const mine = orders.filter(o => o.driverId === driverId && o.status === "delivered");
+  const ratings = mine.map(o => o.rating).filter(Boolean);
+  const rating = ratings.length ? (ratings.reduce((a,b)=>a+b,0) / ratings.length) : 5.0;
+  const earnings = mine.reduce((s,o) => s + o.price, 0);
+  return { deliveries: mine.length, earnings, rating: Math.round(rating * 10) / 10 };
+}
+
+function fmtNum(n) { return Number(n || 0).toLocaleString("en-US"); }
+function todayISO() { return new Date().toISOString().slice(0,10); } // تاريخ اليوم الفعلي، لا تاريخ عرض ثابت
+
+function formatArabicDate(d) {
+  try {
+    return new Intl.DateTimeFormat("ar", { weekday:"long", day:"numeric", month:"long", year:"numeric", numberingSystem:"latn" }).format(d || new Date());
+  } catch (e) { return ""; }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// UTIL — تخزين محلي، تعدد اللغات، الوضع الليلي، الإشعارات، Toast
+// ══════════════════════════════════════════════════════════════════════════════
+const LS_ACCOUNTS         = "moter_accounts";      // كل الحسابات المسجَّلة فعلياً (عملاء وسائقون)
+const LS_SESSION          = "moter_session";        // الجلسة الحالية { accountId }
+const LS_SETTINGS         = "moter_app_settings"; // darkMode + lang
+const LS_NOTIFICATIONS    = "moter_notifications";
+const LS_ORDERS           = "moter_orders";
+const LS_WITHDRAWALS      = "moter_withdrawals";
+const SS_NAV              = "moter_nav_session";
+
+function readLS(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) { return fallback; }
+}
+function writeLS(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+}
+function useLocalStorageState(key, initial) {
+  const [value, setValue] = useState(() => readLS(key, initial));
+  useEffect(() => { writeLS(key, value); }, [key, value]);
+  return [value, setValue];
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// طبقة الحسابات/المصادقة — واجهة غير متزامنة بشكل الـ API الحقيقي (تأخير شبكة
+// محاكى، تحقّق فعلي، أخطاء حقيقية) لتقوم مقام باكند حقيقي حتى ربطها بواحد فعلي
+// (Firebase أو باكند Express/Postgres الخاص بك). كل الدوال async وتُرجع Promise
+// تماماً كما لو كانت طلبات fetch حقيقية، فتبديل الداخل لاحقاً لا يغيّر بقية التطبيق.
+// ══════════════════════════════════════════════════════════════════════════════
+function apiDelay(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+function normalizePhone(phone) { return String(phone || "").trim().replace(/[\s-]/g, ""); }
+
+async function hashSecret(text) {
+  try {
+    const enc = new TextEncoder().encode(text);
+    const buf = await crypto.subtle.digest("SHA-256", enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  } catch (e) {
+    return "h_" + text.length + "_" + text; // احتياط بسيط لبيئات بلا Web Crypto
+  }
+}
+
+function getAccounts() { return readLS(LS_ACCOUNTS, []); }
+function saveAccounts(list) { writeLS(LS_ACCOUNTS, list); }
+
+const authApi = {
+  async register({ role, name, phone, password, photo, vehicle, plate }) {
+    await apiDelay(700);
+    const cleanPhone = normalizePhone(phone);
+    const accounts = getAccounts();
+    if (accounts.some(a => a.role === role && normalizePhone(a.phone) === cleanPhone)) {
+      throw new Error("هذا الرقم مسجَّل بالفعل بحساب " + (role === "driver" ? "سائق" : "عميل") + "، جرّب تسجيل الدخول");
+    }
+    const passwordHash = await hashSecret(password);
+    const account = {
+      id: (role === "driver" ? "DRV-" : "CUS-") + Date.now().toString(36).toUpperCase(),
+      role, name: name.trim(), phone: cleanPhone, passwordHash,
+      photo: photo || null, notificationsEnabled: true, createdAt: new Date().toISOString(),
+      ...(role === "driver" ? { vehicle: (vehicle || "").trim(), plate: (plate || "").trim().toUpperCase(), online: true } : {}),
+    };
+    saveAccounts([...accounts, account]);
+    writeLS(LS_SESSION, { accountId: account.id });
+    return account;
+  },
+  async login({ role, phone, password }) {
+    await apiDelay(700);
+    const cleanPhone = normalizePhone(phone);
+    const account = getAccounts().find(a => a.role === role && normalizePhone(a.phone) === cleanPhone);
+    if (!account) throw new Error("لا يوجد حساب " + (role === "driver" ? "سائق" : "عميل") + " بهذا الرقم");
+    const passwordHash = await hashSecret(password);
+    if (passwordHash !== account.passwordHash) throw new Error("كلمة المرور غير صحيحة");
+    writeLS(LS_SESSION, { accountId: account.id });
+    return account;
+  },
+  async logout() {
+    await apiDelay(550); // خروج شعوره حقيقي، لا اختفاء مفاجئ
+    writeLS(LS_SESSION, null);
+  },
+  async updateAccount(id, patch) {
+    await apiDelay(650);
+    const accounts = getAccounts();
+    const idx = accounts.findIndex(a => a.id === id);
+    if (idx === -1) throw new Error("تعذّر العثور على الحساب");
+    accounts[idx] = { ...accounts[idx], ...patch };
+    saveAccounts(accounts);
+    return accounts[idx];
+  },
+  async changePassword(id, currentPassword, newPassword) {
+    await apiDelay(700);
+    const accounts = getAccounts();
+    const idx = accounts.findIndex(a => a.id === id);
+    if (idx === -1) throw new Error("تعذّر العثور على الحساب");
+    const currentHash = await hashSecret(currentPassword);
+    if (currentHash !== accounts[idx].passwordHash) throw new Error("كلمة المرور الحالية غير صحيحة");
+    accounts[idx].passwordHash = await hashSecret(newPassword);
+    saveAccounts(accounts);
+  },
+  async deleteAccount(id) {
+    await apiDelay(650);
+    saveAccounts(getAccounts().filter(a => a.id !== id));
+    writeLS(LS_SESSION, null);
+  },
+  getSession() {
+    const s = readLS(LS_SESSION, null);
+    if (!s || !s.accountId) return null;
+    return getAccounts().find(a => a.id === s.accountId) || null;
+  },
+  findByPhone(role, phone) {
+    const cleanPhone = normalizePhone(phone);
+    return getAccounts().find(a => a.role === role && normalizePhone(a.phone) === cleanPhone) || null;
+  },
+};
+
+// ── قفل تمرير الخلفية أثناء ظهور أي نافذة منبثقة (بلا أي إزاحة للشاشة) ────────
+function useScrollLock(active) {
+  useEffect(() => {
+    if (!active) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [active]);
+}
+
+// ── قاموس الترجمة (واجهة التطبيق الأساسية) ─────────────────────────────────────
+const DICT = {
+  welcome_tagline: "توصيل فوري • بالموتوسيكل",
+  choose_account: "اختر نوع حسابك",
+  role_customer_title: "عميل", role_customer_desc: "اطلب توصيل وتتبع طلبك لحظة بلحظة",
+  role_driver_title: "سائق", role_driver_desc: "استقبل الطلبات واكسب يومياً",
+  back: "رجوع", login_title: "تسجيل الدخول", account_of: "حساب",
+  password_label: "كلمة المرور", login_btn: "تسجيل الدخول",
+  logging_in: "جارٍ تسجيل الدخول...",
+  err_pass_required: "الرجاء إدخال كلمة المرور",
+  err_pass_short: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+  err_name_required: "الرجاء إدخال الاسم الكامل",
+  err_name_short: "الاسم يجب أن يكون حرفين على الأقل",
+  err_phone_required: "الرجاء إدخال رقم الهاتف",
+  err_phone_invalid: "رقم الهاتف غير صحيح",
+  signup_title: "إنشاء حساب",
+  phone_label: "رقم الهاتف",
+  confirm_password_label: "تأكيد كلمة المرور",
+  photo_label: "صورتك الشخصية",
+  photo_hint: "اضغط لإضافة صورتك",
+  create_account_btn: "إنشاء الحساب",
+  creating_account: "جارٍ إنشاء الحساب...",
+  no_account_q: "ليس لديك حساب؟",
+  have_account_q: "لديك حساب بالفعل؟",
+  go_login: "تسجيل الدخول",
+  go_signup: "إنشاء حساب",
+  err_confirm_pass_required: "الرجاء تأكيد كلمة المرور",
+  err_confirm_pass_mismatch: "كلمتا المرور غير متطابقتين",
+  err_photo_required: "الرجاء إضافة صورة شخصية",
+  nav_orders: "الطلبات", nav_settings: "الإعدادات",
+  nav_home: "الرئيسية", nav_history: "طلباتي", nav_profile: "حسابي", nav_earnings: "أرباحي",
+  search_ph_orders: "ابحث برقم الطلب، العميل، العنوان...",
+  no_results_title: "لا توجد نتائج",
+  no_results_orders: "لم نجد أي طلبات مطابقة لبحثك",
+  no_pending_orders_title: "لا توجد طلبات متاحة",
+  no_pending_orders_sub: "سنعلمك فور توفر طلب جديد في منطقتك",
+  no_history_title: "لا يوجد طلبات بعد",
+  no_history_sub: "طلباتك السابقة ستظهر هنا",
+  clear_search: "مسح البحث",
+  settings_title: "الإعدادات", personal_info: "المعلومات الشخصية", full_name: "الاسم الكامل",
+  phone_number: "رقم الهاتف", preferences: "التفضيلات", notifications_label: "الإشعارات",
+  dark_mode_label: "الوضع الليلي", save_changes: "حفظ التغييرات",
+  saved_success: "✓ تم الحفظ بنجاح", saving: "جارٍ الحفظ...",
+  notifications_title: "الإشعارات", mark_all_read: "تحديد الكل كمقروء",
+  no_notifications_title: "لا توجد إشعارات", no_notifications_sub: "ستظهر تنبيهاتك هنا أولاً بأول",
+};
+
+const AppCtx = React.createContext(null);
+function useApp() { return React.useContext(AppCtx); }
+
+
+// ── مؤشر تحميل ────────────────────────────────────────────────────────────────
+function Spinner({ dark }) {
+  return <span className={`moter-spinner ${dark?"moter-spinner-dark":""}`} role="status" aria-label="جارٍ التحميل"/>;
+}
+
+// ── حالة فارغة موحّدة ─────────────────────────────────────────────────────────
+function EmptyState({ emoji = "📭", title, subtitle, action }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-14 px-6">
+      <div className="text-5xl mb-4">{emoji}</div>
+      <p className="font-black text-gray-950 text-base mb-1">{title}</p>
+      {subtitle && <p className="text-gray-400 text-sm max-w-[240px]">{subtitle}</p>}
+      {action}
+    </div>
+  );
+}
+
+// ── هياكل تحميل (Skeleton) ────────────────────────────────────────────────────
+function SkeletonLine({ w = "100%", h = 14 }) {
+  return <div className="moter-skeleton" style={{ width:w, height:h }}/>;
+}
+function SkeletonCard() {
+  return (
+    <div className="bg-white border rounded-2xl p-4" style={{borderColor:"var(--bc-a)"}}>
+      <div className="flex justify-between items-center mb-3"><SkeletonLine w={72} h={12}/><SkeletonLine w={54} h={20}/></div>
+      <SkeletonLine w="78%" h={14}/>
+      <div className="mt-2"><SkeletonLine w="52%" h={12}/></div>
+    </div>
+  );
+}
+function SkeletonList({ count = 3 }) {
+  return <div className="space-y-3">{Array.from({ length: count }).map((_, i) => <SkeletonCard key={i}/>)}</div>;
+}
+
+// ── نجوم تقييم للعرض فقط ──────────────────────────────────────────────────────
+function RatingStars({ value = 0, size = 12, showValue = true }) {
+  const rounded = Math.round(value);
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="inline-flex">
+        {[1,2,3,4,5].map(i => (
+          <Star key={i} size={size} className={i <= rounded ? "text-amber-400 fill-amber-400" : "text-gray-200 fill-gray-200"}/>
+        ))}
+      </span>
+      {showValue && <span className="text-gray-500 font-bold text-xs">{Number(value).toFixed(1)}</span>}
+    </span>
+  );
+}
+
+// ── مخطط أعمدة بسيط قابل لإعادة الاستخدام (أرباح/طلبات) ───────────────────────
+function MiniBarChart({ labels, values, highlightIndex = -1 }) {
+  const max = Math.max(...values, 1);
+  return (
+    <div className="flex items-end gap-2" style={{ height:112 }}>
+      {values.map((v, i) => (
+        <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+          <div className="w-full flex flex-col justify-end" style={{ height:96 }}>
+            <div className={`w-full rounded-t-lg transition-all ${i===highlightIndex ? "bg-gray-950" : "bg-gray-100"}`}
+              style={{ height: max>0 ? `${(v/max)*90}%` : "4px", minHeight: v>0?8:4 }}/>
+          </div>
+          <span className="text-xs text-gray-400 font-medium">{labels[i]}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── مخطط دائري بسيط (توزيع حالات الطلبات) ─────────────────────────────────────
+// ── لوحة الإشعارات (قابلة للاستدعاء من أي مكان) ────────────────────────────────
+function NotificationsModal({ open, onClose }) {
+  const { notifications, markAllRead, t } = useApp();
+  useScrollLock(open);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4 sm:items-center sm:pb-0" style={{background:"rgba(10,10,10,0.55)"}} onClick={onClose}>
+      <div className="w-full bg-white rounded-3xl overflow-hidden" style={{maxWidth:420, maxHeight:"75vh"}} onClick={e=>e.stopPropagation()}>
+        <div className="p-5 border-b flex items-center justify-between" style={{borderColor:"var(--bc-a)"}}>
+          <h3 className="font-black text-gray-950">{t("notifications_title")}</h3>
+          <button onClick={onClose} aria-label={t("back")} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+            <X size={14} className="text-gray-600"/>
+          </button>
+        </div>
+        <div className="overflow-auto" style={{maxHeight:"55vh"}}>
+          {notifications.length === 0 ? (
+            <EmptyState emoji="🔔" title={t("no_notifications_title")} subtitle={t("no_notifications_sub")}/>
+          ) : notifications.map(n => (
+            <div key={n.id} className="p-4 border-b flex items-start gap-3" style={{borderColor:"var(--bc-c)"}}>
+              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${n.read?"bg-transparent":"bg-blue-500"}`}/>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-950 text-sm">{n.title}</p>
+                <p className="text-gray-500 text-sm mt-0.5">{n.body}</p>
+                <p className="text-gray-300 text-xs mt-1">{n.time}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        {notifications.length > 0 && (
+          <button onClick={markAllRead} className="w-full p-4 text-center font-bold text-sm text-gray-700 active:bg-gray-50">
+            {t("mark_all_read")}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── جرس الإشعارات (زر + لوحة) ─────────────────────────────────────────────────
+function NotificationBell({ variant = "dark" }) {
+  const { notifications, t } = useApp();
+  const [open, setOpen] = useState(false);
+  const unread = notifications.filter(n => !n.read).length;
+  const btnCls = variant === "dark" ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-700";
+  return (
+    <>
+      <div className="relative">
+        <button onClick={()=>setOpen(true)} aria-label={t("notifications_title")} className={`w-10 h-10 rounded-xl flex items-center justify-center ${btnCls}`}>
+          <Bell size={18}/>
+        </button>
+        {unread > 0 && (
+          <span className="absolute -top-1 -left-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold" aria-hidden="true">
+            {unread}
+          </span>
+        )}
+      </div>
+      <NotificationsModal open={open} onClose={()=>setOpen(false)}/>
+    </>
+  );
+}
+
+// ── نظام تنبيهات Toast خفيفة (نجاح/خطأ) ───────────────────────────────────────
+function ToastHost({ toasts }) {
+  if (!toasts.length) return null;
+  return (
+    <div className="fixed bottom-24 inset-x-0 z-[70] flex flex-col items-center gap-2 px-4 pointer-events-none" style={{ maxWidth:480, margin:"0 auto" }}>
+      {toasts.map(ts => (
+        <div key={ts.id} className={`moter-toast pointer-events-auto max-w-full px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2 text-sm font-bold ${ts.type==="error" ? "bg-red-500 text-white" : "bg-gray-950 text-white"}`}>
+          {ts.type==="error" ? <AlertCircle size={16} className="flex-shrink-0"/> : <CheckCircle size={16} className="flex-shrink-0"/>}
+          <span className="truncate">{ts.message}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── سبلاش الشاشة الأولية ──────────────────────────────────────────────────────
+function SplashScreen() {
+  return (
+    <div className="moter-splash">
+      <div className="moter-splash-icon w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-4">
+        <Bike size={36} className="text-gray-950"/>
+      </div>
+      <h1 className="text-white text-2xl font-black tracking-tight">موتر</h1>
+    </div>
+  );
+}
+
+// ── Shared Components ─────────────────────────────────────────────────────────
+function Badge({ status }) {
+  const s = ST[status] || ST.pending;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${s.text} ${s.bg}`}>
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.dot}`}/>
+      {s.label}
+    </span>
+  );
+}
+
+// ── نظام تتبّع الطلب بالخط الزمني (Timeline) — موحّد بين واجهتَي العميل والسائق ──
+// نفس الخطوات، نفس الترتيب، ونفس منطق الحالة تماماً كما في تطبيقات مثل أمازون؛
+// يتغيّر فقط نص كل خطوة بحسب من يشاهدها (role="customer" أو role="driver").
+const TIMELINE_STEPS = [
+  { key:"placed",    icon:Check,       cLabel:"تم تأكيد الطلب",   dLabel:"طلب جديد مستلم"            },
+  { key:"assigned",  icon:UserCheck,   cLabel:"تم إسناد سائق",    dLabel:"تم قبول الطلب"              },
+  { key:"pickup",    icon:Package,     cLabel:"استلام الشحنة",    dLabel:"استلام الشحنة من الانطلاق"  },
+  { key:"transit",   icon:Bike,        cLabel:"في الطريق إليك",   dLabel:"التوجه لنقطة التسليم"       },
+  { key:"delivered", icon:CheckCircle, cLabel:"تم التوصيل",       dLabel:"تسليم الطلب"                },
+];
+const TL_PICKUP_AT = 0.12; // نسبة تقدّم الرحلة التي تُعتبر عندها الشحنة "مستلمة" من نقطة الانطلاق
+
+// فهرس الخطوة الجارية الآن (0-4)، أو -1 إن كان الطلب ملغياً (لا يُعرض له خط زمني)
+function currentTimelineStep(order) {
+  if (!order || order.status === "cancelled") return -1;
+  if (order.status === "delivered") return 4;
+  if (order.status === "pending") return 1;      // تم التأكيد، وجارٍ الآن البحث عن سائق
+  const p = order.progress || 0;                  // in_transit
+  if (p >= 1) return 4;
+  if (p >= TL_PICKUP_AT) return 3;                 // في الطريق إلى العميل
+  return 2;                                        // جارٍ استلام الشحنة من نقطة الانطلاق
+}
+
+function DeliveryTimeline({ order, role = "customer", eta, variant = "full" }) {
+  if (!order || order.status === "cancelled") return null;
+  const curIdx = currentTimelineStep(order);
+  const isDone = order.status === "delivered";
+  const stateOf = (i) => isDone ? "done" : i < curIdx ? "done" : i === curIdx ? "current" : "upcoming";
+
+  if (variant === "compact") {
+    const activeLabel = isDone ? "تم التوصيل بنجاح 🎉" : (role==="driver" ? TIMELINE_STEPS[curIdx].dLabel : TIMELINE_STEPS[curIdx].cLabel);
+    return (
+      <div>
+        <div className="flex items-center">
+          {TIMELINE_STEPS.map((step, i) => {
+            const state = stateOf(i);
+            const isLast = i === TIMELINE_STEPS.length - 1;
+            return (
+              <React.Fragment key={step.key}>
+                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-colors duration-300 ${state==="upcoming"?"bg-gray-200":"bg-gray-950"} ${state==="current"?"moter-tl-pulse":""}`}/>
+                {!isLast && <div className="flex-1 h-0.5 mx-1 rounded-full transition-colors duration-300" style={{background: state==="done" ? "#0A0A0A" : "var(--bc-b)"}}/>}
+              </React.Fragment>
+            );
+          })}
+        </div>
+        <p className="text-xs font-bold text-gray-950 mt-2 truncate">{activeLabel}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border rounded-2xl p-5" style={{borderColor:"var(--bc-a)"}} aria-label="تتبع حالة الطلب">
+      {TIMELINE_STEPS.map((step, i) => {
+        const state = stateOf(i);
+        const label = role === "driver" ? step.dLabel : step.cLabel;
+        const Ic = state === "done" ? Check : step.icon;
+        const isLast = i === TIMELINE_STEPS.length - 1;
+        let caption = "";
+        if (state === "current") {
+          if (step.key === "assigned") caption = "جارٍ البحث عن أقرب سائق متاح...";
+          else if (step.key === "pickup") caption = role==="driver" ? "توجّه الآن لاستلام الشحنة" : "السائق في طريقه لاستلام شحنتك...";
+          else if (step.key === "transit") caption = eta ? `الوصول المتوقع خلال ~${eta} دقيقة` : "السائق في الطريق الآن...";
+        }
+        return (
+          <div key={step.key} className={`flex gap-3.5 ${isLast?"":"pb-6"}`}>
+            <div className="flex flex-col items-center flex-shrink-0">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-300 ${
+                state==="done" ? "bg-gray-950 text-white" : state==="current" ? "bg-gray-950 text-white moter-tl-pulse" : "bg-gray-100 text-gray-300"}`}>
+                <Ic size={15} strokeWidth={2.4}/>
+              </div>
+              {!isLast && <div className="w-0.5 flex-1 rounded-full transition-colors duration-300" style={{minHeight:24, background: state==="done" ? "#0A0A0A" : "var(--bc-b)"}}/>}
+            </div>
+            <div className="flex-1 min-w-0 pt-1.5">
+              <p className={`font-black text-sm ${state==="upcoming" ? "text-gray-300" : "text-gray-950"}`}>{label}</p>
+              {caption && <p className="text-gray-400 text-xs mt-1">{caption}</p>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── اختيار نوع التوصيل ────────────────────────────────────────────────────────
+function DeliveryTypePicker({ value, onChange, error }) {
+  return (
+    <div>
+      <div className="grid grid-cols-3 gap-2">
+        {DELIVERY_TYPES.map(dt => (
+          <button key={dt.id} type="button" onClick={()=>onChange(dt.id)}
+            className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1 transition-all ${value===dt.id ? "bg-gray-950 border-gray-950 text-white" : "bg-white text-gray-700"}`}
+            style={value!==dt.id ? {borderColor:"var(--bc-b)"} : {}}>
+            <span className="text-xl">{dt.emoji}</span>
+            <span className="text-xs font-black">{dt.label}</span>
+          </button>
+        ))}
+      </div>
+      {error && <p className="moter-field-error"><AlertCircle size={13}/> {error}</p>}
+    </div>
+  );
+}
+
+// ── اختيار طريقة الدفع ────────────────────────────────────────────────────────
+function PaymentMethodPicker({ value, onChange, error }) {
+  return (
+    <div className="space-y-2">
+      {PAYMENT_METHODS.map(pm => {
+        const Ic = pm.Icon;
+        const active = value === pm.id;
+        return (
+          <button key={pm.id} type="button" onClick={()=>onChange(pm.id)}
+            className={`w-full p-4 rounded-2xl border-2 flex items-center gap-3 text-right transition-all ${active ? "border-gray-950 bg-gray-50" : "bg-white"}`}
+            style={!active ? {borderColor:"var(--bc-b)"} : {}}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${active?"bg-gray-950 text-white":"bg-gray-100 text-gray-600"}`}>
+              <Ic size={17}/>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-950 text-sm">{pm.label}</p>
+              <p className="text-gray-400 text-xs truncate">{pm.desc}</p>
+            </div>
+            <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${active?"border-gray-950 bg-gray-950":"border-gray-300"}`}>
+              {active && <Check size={11} className="text-white"/>}
+            </div>
+          </button>
+        );
+      })}
+      {error && <p className="moter-field-error"><AlertCircle size={13}/> {error}</p>}
+    </div>
+  );
+}
+
+// ── إدخال كود الخصم مع تحقق حي ────────────────────────────────────────────────
+function PromoInput({ orderAmount, onApplied }) {
+  const [code, setCode] = useState("");
+  const [result, setResult] = useState(null);
+  const [checking, setChecking] = useState(false);
+
+  const apply = () => {
+    if (!code.trim()) return;
+    setChecking(true);
+    setTimeout(() => {
+      const r = applyPromoCode(orderAmount, code);
+      setResult(r);
+      setChecking(false);
+      onApplied(r.error ? null : { code: code.trim().toUpperCase(), ...r });
+    }, 500);
+  };
+
+  const clear = () => { setCode(""); setResult(null); onApplied(null); };
+
+  return (
+    <div className="bg-white border rounded-2xl p-4" style={{borderColor:"var(--bc-a)"}}>
+      <div className="flex items-center gap-2 mb-2">
+        <Tag size={15} className="text-gray-400"/>
+        <p className="font-bold text-gray-950 text-sm">كود الخصم</p>
+      </div>
+      {result && !result.error ? (
+        <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl p-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <CheckCircle size={15} className="text-green-600 flex-shrink-0"/>
+            <span className="text-green-800 text-sm font-bold truncate">{result.label} • خصم {fmtNum(result.discount)} ج.س</span>
+          </div>
+          <button onClick={clear} aria-label="إزالة الكود" className="flex-shrink-0"><X size={15} className="text-green-700"/></button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <input value={code} onChange={e=>setCode(e.target.value)} placeholder="أدخل الكود هنا" dir="ltr"
+            className="flex-1 border-2 rounded-xl px-4 py-2.5 text-sm text-gray-950 font-bold focus:outline-none focus:border-gray-950 transition-colors uppercase" style={{borderColor:"var(--bc-b)"}}/>
+          <button onClick={apply} disabled={checking || !code.trim()} className="bg-gray-950 text-white px-5 rounded-xl font-bold text-sm flex items-center gap-1.5 flex-shrink-0">
+            {checking && <Spinner/>} تطبيق
+          </button>
+        </div>
+      )}
+      {result && result.error && <p className="moter-field-error"><AlertCircle size={13}/> {result.error}</p>}
+    </div>
+  );
+}
+
+// ── Welcome Screen ────────────────────────────────────────────────────────────
+function WelcomeScreen({ onSelect }) {
+  const { t, darkMode, setDarkMode } = useApp();
+  return (
+    <div className="min-h-screen bg-white flex flex-col relative" dir="rtl">
+      <button onClick={()=>setDarkMode(v=>!v)} aria-label={darkMode ? "تفعيل الوضع النهاري" : "تفعيل الوضع الليلي"} aria-pressed={darkMode}
+        className="absolute top-5 left-5 z-10 w-11 h-11 rounded-2xl flex items-center justify-center bg-white/10 border border-white/15 text-white backdrop-blur-sm active:scale-90 transition-transform">
+        {darkMode ? <Sun size={19}/> : <Moon size={19}/>}
+      </button>
+      <div className="bg-gray-950 text-white flex flex-col items-center justify-center py-16 px-6 hero-surface">
+        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-5 shadow-lg">
+          <Bike size={36} className="text-gray-950"/>
+        </div>
+        <h1 className="text-4xl font-black tracking-tight">موتر</h1>
+        <p className="text-gray-400 mt-2 text-sm font-medium">{t("welcome_tagline")}</p>
+      </div>
+
+      <div className="flex-1 px-5 py-8 flex flex-col gap-3 role-stagger">
+        <p className="text-xs font-bold text-gray-400 text-center uppercase tracking-widest mb-2">{t("choose_account")}</p>
+        {[
+          { r:"customer", Icon:User, title:t("role_customer_title"), desc:t("role_customer_desc"), dark:true  },
+          { r:"driver",   Icon:Bike, title:t("role_driver_title"),   desc:t("role_driver_desc"),    dark:false },
+        ].map(({ r, Icon, title, desc, dark }) => (
+          <button key={r} onClick={() => onSelect(r)} aria-label={title}
+            className={`w-full p-5 rounded-2xl border-2 flex items-center gap-4 transition-all active:scale-95 ${dark ? "bg-gray-950 border-gray-950 text-white" : "bg-white border-gray-150 text-gray-950"}`}
+            style={!dark ? {borderColor:"var(--bc-b)"} : {}}>
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${dark ? "bg-white/10" : "bg-gray-100"}`}>
+              <Icon size={22} className={dark ? "text-white" : "text-gray-700"}/>
+            </div>
+            <div className="flex-1 min-w-0 text-right">
+              <div className="font-bold text-lg leading-tight">{title}</div>
+              <div className={`text-sm mt-0.5 ${dark ? "text-gray-400" : "text-gray-500"}`}>{desc}</div>
+            </div>
+            <ChevronRight size={18} className={`flex-shrink-0 ${dark ? "text-gray-500" : "text-gray-300"}`} style={{transform:"scaleX(-1)"}}/>
+          </button>
+        ))}
+      </div>
+      <p className="text-center text-gray-300 text-xs pb-6">موتر للتوصيل © 2026 — v2.0</p>
+    </div>
+  );
+}
+
+// ── Login Screen ──────────────────────────────────────────────────────────────
+function LoginScreen({ role, onAuthed, onBack }) {
+  const { t } = useApp();
+  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const meta = { customer:{label:t("role_customer_title"),Icon:User}, driver:{label:t("role_driver_title"),Icon:Bike} };
+  const { label, Icon } = meta[role];
+
+  // ── حقول تسجيل الدخول (رقم الهاتف + كلمة السر) ──
+  const [loginPhone, setLoginPhone] = useState("");
+  const [loginPass, setLoginPass] = useState("");
+  const [showLoginPass, setShowLoginPass] = useState(false);
+  const [loginErrors, setLoginErrors] = useState({});
+  const [loginFormError, setLoginFormError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const validateLogin = () => {
+    const errs = {};
+    const phoneTrim = loginPhone.trim().replace(/[\s-]/g, "");
+    if (!phoneTrim) errs.phone = t("err_phone_required");
+    else if (!/^\+?\d{8,14}$/.test(phoneTrim)) errs.phone = t("err_phone_invalid");
+    if (!loginPass) errs.pass = t("err_pass_required");
+    else if (loginPass.length < 6) errs.pass = t("err_pass_short");
+    setLoginErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const submitLogin = async () => {
+    setLoginFormError("");
+    if (!validateLogin()) return;
+    setLoginLoading(true);
+    try {
+      const account = await authApi.login({ role, phone: loginPhone, password: loginPass });
+      onAuthed(account);
+    } catch (e) {
+      setLoginFormError(e.message || "تعذّر تسجيل الدخول، حاول مرة أخرى");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // ── حقول إنشاء الحساب (الاسم + رقم الهاتف + كلمة السر + تأكيدها + صورة + بيانات المركبة للسائق) ──
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [pass, setPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [photo, setPhoto] = useState(null);
+  const [vehicle, setVehicle] = useState("");
+  const [plate, setPlate] = useState("");
+  const [signupErrors, setSignupErrors] = useState({});
+  const [signupFormError, setSignupFormError] = useState("");
+  const [signupLoading, setSignupLoading] = useState(false);
+  const photoInputId = "signupPhotoInput_" + role;
+
+  const handlePhoto = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setPhoto(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const validateSignup = () => {
+    const errs = {};
+    const nameTrim = fullName.trim();
+    if (!nameTrim) errs.name = t("err_name_required");
+    else if (nameTrim.length < 2) errs.name = t("err_name_short");
+    const phoneTrim = phone.trim().replace(/[\s-]/g, "");
+    if (!phoneTrim) errs.phone = t("err_phone_required");
+    else if (!/^\+?\d{8,14}$/.test(phoneTrim)) errs.phone = t("err_phone_invalid");
+    if (!pass) errs.pass = t("err_pass_required");
+    else if (pass.length < 6) errs.pass = t("err_pass_short");
+    if (!confirmPass) errs.confirmPass = t("err_confirm_pass_required");
+    else if (confirmPass !== pass) errs.confirmPass = t("err_confirm_pass_mismatch");
+    if (!photo) errs.photo = t("err_photo_required");
+    if (role === "driver") {
+      if (!vehicle.trim()) errs.vehicle = "الرجاء إدخال نوع المركبة";
+      if (!plate.trim()) errs.plate = "الرجاء إدخال رقم لوحة المركبة";
+    }
+    setSignupErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const submitSignup = async () => {
+    setSignupFormError("");
+    if (!validateSignup()) return;
+    setSignupLoading(true);
+    try {
+      const account = await authApi.register({ role, name: fullName, phone, password: pass, photo, vehicle, plate });
+      onAuthed(account);
+    } catch (e) {
+      setSignupFormError(e.message || "تعذّر إنشاء الحساب، حاول مرة أخرى");
+    } finally {
+      setSignupLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col" dir="rtl">
+      <div className="bg-gray-950 text-white p-6 pt-14">
+        <button onClick={onBack} className="flex items-center gap-2 text-gray-400 text-sm mb-6">
+          <ArrowLeft size={16} style={{transform:"scaleX(-1)"}}/> {t("back")}
+        </button>
+        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-4">
+          <Icon size={20} className="text-gray-950"/>
+        </div>
+        <h2 className="text-2xl font-black">{mode === "login" ? t("login_title") : t("signup_title")}</h2>
+        <p className="text-gray-400 text-sm mt-1">{t("account_of")} {label}</p>
+      </div>
+
+      {mode === "login" ? (
+        <div className="flex-1 p-6 flex flex-col gap-4 mt-2">
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">{t("phone_label")}</label>
+            <input type="tel" value={loginPhone} onChange={e=>setLoginPhone(e.target.value)} placeholder="05xxxxxxxx"
+              aria-invalid={!!loginErrors.phone} aria-label={t("phone_label")}
+              className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors" dir="ltr"
+              style={{borderColor: loginErrors.phone ? "#EF4444" : (loginPhone?"var(--ink)":"var(--bc-b)")}}/>
+            {loginErrors.phone && <p className="moter-field-error"><AlertCircle size={13}/> {loginErrors.phone}</p>}
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">{t("password_label")}</label>
+            <div className="relative">
+              <input type={showLoginPass?"text":"password"} value={loginPass} onChange={e=>setLoginPass(e.target.value)} placeholder="••••••••"
+                aria-invalid={!!loginErrors.pass} aria-label={t("password_label")}
+                className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors" dir="ltr"
+                style={{borderColor: loginErrors.pass ? "#EF4444" : (loginPass?"var(--ink)":"var(--bc-b)")}}/>
+              <button onClick={()=>setShowLoginPass(!showLoginPass)} aria-label={showLoginPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                {showLoginPass ? <EyeOff size={18}/> : <Eye size={18}/>}
+              </button>
+            </div>
+            {loginErrors.pass && <p className="moter-field-error"><AlertCircle size={13}/> {loginErrors.pass}</p>}
+          </div>
+          {loginFormError && <p className="moter-field-error justify-center bg-red-50 rounded-xl px-3 py-2.5"><AlertCircle size={13}/> {loginFormError}</p>}
+          <button onClick={submitLogin} disabled={loginLoading}
+            className="w-full bg-gray-950 text-white py-4 rounded-xl font-bold text-base mt-2 active:scale-95 transition-transform flex items-center justify-center gap-2">
+            {loginLoading && <Spinner/>}
+            {loginLoading ? t("logging_in") : t("login_btn")}
+          </button>
+          <div className="text-center">
+            <span className="text-gray-400 text-sm">{t("no_account_q")} </span>
+            <button onClick={()=>{ setMode("signup"); setLoginFormError(""); }} className="text-gray-900 font-bold text-sm">{t("go_signup")}</button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 p-6 flex flex-col gap-4 mt-2">
+          <div className="flex flex-col items-center mb-1">
+            <div className="relative">
+              {photo ? (
+                <img src={photo} alt={t("photo_label")} className="w-24 h-24 rounded-3xl object-cover"/>
+              ) : (
+                <div className="w-24 h-24 bg-gray-100 border-2 border-dashed rounded-3xl flex items-center justify-center" style={{borderColor: signupErrors.photo ? "#EF4444" : "var(--bc-b)"}}>
+                  <Camera size={26} className="text-gray-400"/>
+                </div>
+              )}
+              <label htmlFor={photoInputId} className="absolute -bottom-1 -left-1 w-8 h-8 bg-gray-950 text-white border-2 border-white rounded-full flex items-center justify-center cursor-pointer active:scale-90 transition-transform">
+                <Camera size={14}/>
+              </label>
+              <input id={photoInputId} type="file" accept="image/*" onChange={handlePhoto} className="hidden" aria-label={t("photo_label")}/>
+            </div>
+            <p className="text-xs text-gray-400 mt-2 text-center">{t("photo_hint")}</p>
+            {signupErrors.photo && <p className="moter-field-error"><AlertCircle size={13}/> {signupErrors.photo}</p>}
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">الاسم الكامل</label>
+            <input type="text" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="اكتب اسمك الكامل"
+              aria-invalid={!!signupErrors.name} aria-label="الاسم الكامل"
+              className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors"
+              style={{borderColor: signupErrors.name ? "#EF4444" : (fullName?"var(--ink)":"var(--bc-b)")}}/>
+            {signupErrors.name && <p className="moter-field-error"><AlertCircle size={13}/> {signupErrors.name}</p>}
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">{t("phone_label")}</label>
+            <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="05xxxxxxxx"
+              aria-invalid={!!signupErrors.phone} aria-label={t("phone_label")}
+              className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors" dir="ltr"
+              style={{borderColor: signupErrors.phone ? "#EF4444" : (phone?"var(--ink)":"var(--bc-b)")}}/>
+            {signupErrors.phone && <p className="moter-field-error"><AlertCircle size={13}/> {signupErrors.phone}</p>}
+          </div>
+
+          {role === "driver" && (
+            <>
+              <div>
+                <label className="text-sm font-semibold text-gray-700 block mb-2">نوع المركبة</label>
+                <input type="text" value={vehicle} onChange={e=>setVehicle(e.target.value)} placeholder="مثال: TVS Star"
+                  aria-invalid={!!signupErrors.vehicle} aria-label="نوع المركبة"
+                  className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors"
+                  style={{borderColor: signupErrors.vehicle ? "#EF4444" : (vehicle?"var(--ink)":"var(--bc-b)")}}/>
+                {signupErrors.vehicle && <p className="moter-field-error"><AlertCircle size={13}/> {signupErrors.vehicle}</p>}
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700 block mb-2">رقم لوحة المركبة</label>
+                <input type="text" value={plate} onChange={e=>setPlate(e.target.value)} placeholder="مثال: KRT 1234" dir="ltr"
+                  aria-invalid={!!signupErrors.plate} aria-label="رقم لوحة المركبة"
+                  className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors"
+                  style={{borderColor: signupErrors.plate ? "#EF4444" : (plate?"var(--ink)":"var(--bc-b)")}}/>
+                {signupErrors.plate && <p className="moter-field-error"><AlertCircle size={13}/> {signupErrors.plate}</p>}
+              </div>
+            </>
+          )}
+
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">{t("password_label")}</label>
+            <div className="relative">
+              <input type={showPass?"text":"password"} value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••"
+                aria-invalid={!!signupErrors.pass} aria-label={t("password_label")}
+                className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors" dir="ltr"
+                style={{borderColor: signupErrors.pass ? "#EF4444" : (pass?"var(--ink)":"var(--bc-b)")}}/>
+              <button onClick={()=>setShowPass(!showPass)} aria-label={showPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                {showPass ? <EyeOff size={18}/> : <Eye size={18}/>}
+              </button>
+            </div>
+            {signupErrors.pass && <p className="moter-field-error"><AlertCircle size={13}/> {signupErrors.pass}</p>}
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">{t("confirm_password_label")}</label>
+            <div className="relative">
+              <input type={showConfirmPass?"text":"password"} value={confirmPass} onChange={e=>setConfirmPass(e.target.value)} placeholder="••••••••"
+                aria-invalid={!!signupErrors.confirmPass} aria-label={t("confirm_password_label")}
+                className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors" dir="ltr"
+                style={{borderColor: signupErrors.confirmPass ? "#EF4444" : (confirmPass?"var(--ink)":"var(--bc-b)")}}/>
+              <button onClick={()=>setShowConfirmPass(!showConfirmPass)} aria-label={showConfirmPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                {showConfirmPass ? <EyeOff size={18}/> : <Eye size={18}/>}
+              </button>
+            </div>
+            {signupErrors.confirmPass && <p className="moter-field-error"><AlertCircle size={13}/> {signupErrors.confirmPass}</p>}
+          </div>
+
+          {signupFormError && <p className="moter-field-error justify-center bg-red-50 rounded-xl px-3 py-2.5"><AlertCircle size={13}/> {signupFormError}</p>}
+
+          <button onClick={submitSignup} disabled={signupLoading}
+            className="w-full bg-gray-950 text-white py-4 rounded-xl font-bold text-base mt-2 active:scale-95 transition-transform flex items-center justify-center gap-2">
+            {signupLoading && <Spinner/>}
+            {signupLoading ? t("creating_account") : t("create_account_btn")}
+          </button>
+          <div className="text-center">
+            <span className="text-gray-400 text-sm">{t("have_account_q")} </span>
+            <button onClick={()=>{ setMode("login"); setSignupFormError(""); }} className="text-gray-900 font-bold text-sm">{t("go_login")}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CUSTOMER APP
+// ══════════════════════════════════════════════════════════════════════════════
+function CustomerApp({ view, setView, onLogout, onAccountDeleted, currentRole, onSwitchRole }) {
+  const { t, orders, addOrder, updateOrder, account, updateProfile, pushNotification } = useApp();
+  const profile = account;
+  const setProfile = updateProfile;
+  const [form, setForm] = useState({ pickup:"", dropoff:"", item:"", notes:"", deliveryType:"parcel", paymentMethod:"cash" });
+
+  const myOrders = useMemo(() => orders.filter(o => o.customerId === profile.id).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)), [orders, profile.id]);
+  const activeOrder = myOrders.find(o => o.status === "pending" || o.status === "in_transit") || null;
+  const [trackingOrderId, setTrackingOrderId] = useState(() => activeOrder ? activeOrder.id : null);
+  const trackingOrder = orders.find(o => o.id === trackingOrderId) || null;
+
+  useEffect(() => {
+    if (!trackingOrder || trackingOrder.status !== "in_transit" || view !== "tracking") return;
+    const timer = setInterval(() => {
+      updateOrder(trackingOrder.id, (o) => {
+        const p = Math.min((o.progress || 0) + 0.004, 1);
+        if (p >= 1 && o.status !== "delivered") {
+          pushNotification("تم توصيل طلبك 🎉", `تم توصيل الطلب ${o.id} بنجاح، لا تنسَ تقييم السائق`);
+        }
+        return { progress: p, status: p >= 1 ? "delivered" : "in_transit" };
+      });
+    }, 100);
+    return () => clearInterval(timer);
+  }, [trackingOrder && trackingOrder.id, trackingOrder && trackingOrder.status, view]);
+
+  const goTrack = (orderId) => { setTrackingOrderId(orderId); setView("tracking"); };
+
+  const navItems = [
+    {id:"home",    Icon:Home,    label:t("nav_home")},
+    {id:"history", Icon:History, label:t("nav_history")},
+    {id:"profile", Icon:User,    label:t("nav_profile")},
+  ];
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col" dir="rtl">
+      <div className="flex-1 overflow-auto pb-20 view-transition" key={view}>
+        {view==="home"     && <CHome     setView={setView} profile={profile} activeOrder={activeOrder} setForm={setForm} onTrack={()=>activeOrder && goTrack(activeOrder.id)}/>}
+        {view==="form"     && <CForm     setView={setView} form={form} setForm={setForm}/>}
+        {view==="preview"  && <CPreview  setView={setView} form={form} profile={profile} orders={orders} addOrder={addOrder} onConfirmed={goTrack}/>}
+        {view==="tracking" && <CTracking setView={setView} order={trackingOrder} orders={orders} updateOrder={updateOrder}/>}
+        {view==="history"  && <CHistory  orders={myOrders}/>}
+        {view==="profile"  && <CProfile  onLogout={onLogout} setView={setView} profile={profile} orderCount={myOrders.length}/>}
+        {view==="settings" && <SettingsScreen setView={setView} backTo="profile" profile={profile} setProfile={setProfile} roleLabel={t("role_customer_title")} currentRole={currentRole} onSwitchRole={onSwitchRole} onAccountDeleted={onAccountDeleted}/>}
+      </div>
+      {["home","history","profile"].includes(view) && (
+        <nav className="fixed bottom-0 inset-x-0 bg-white border-t flex" style={{borderColor:"var(--bc-d)", maxWidth:480, margin:"0 auto"}}>
+          {navItems.map(({id,Icon:Ic,label}) => (
+            <button key={id} onClick={()=>setView(id)} aria-label={label} className={`flex-1 min-w-0 flex flex-col items-center py-3 px-1 gap-1 transition-colors ${view===id?"text-gray-950":"text-gray-300"}`}>
+              <Ic size={22} strokeWidth={view===id?2.5:1.5} className="flex-shrink-0"/>
+              <span className="w-full text-center truncate text-xs font-semibold">{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+    </div>
+  );
+}
+
+function CHome({ setView, profile, activeOrder, setForm, onTrack }) {
+  const startOrder = (deliveryType) => {
+    setForm(f => ({ ...f, deliveryType: deliveryType || f.deliveryType || "parcel" }));
+    setView("form");
+  };
+  return (
+    <div>
+      <div className="bg-gray-950 text-white p-5 pt-14">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-gray-500 text-sm">مرحباً 👋</p>
+            <h1 className="text-xl font-black">{profile.name}</h1>
+          </div>
+          <NotificationBell variant="dark"/>
+        </div>
+        <div className="bg-gray-800 rounded-2xl p-5">
+          <p className="text-gray-400 text-xs mb-1">خدمة التوصيل</p>
+          <p className="font-black text-lg mb-4">وصّل أي شيء خلال دقائق 🏍️</p>
+          <button onClick={()=>startOrder()} className="w-full bg-white text-gray-950 py-3 rounded-xl font-black text-sm active:scale-95 transition-transform">
+            + اطلب موتر الآن
+          </button>
+        </div>
+      </div>
+      {activeOrder && (
+        <div className="mx-4 mt-4 mb-4 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Truck size={17} className="text-blue-600"/>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-blue-900 text-sm truncate">طلب نشط — {activeOrder.id}</p>
+              <p className="text-blue-500 text-xs">{activeOrder.status==="pending" ? "بانتظار إسناد سائق" : "السائق في الطريق إليك"}</p>
+            </div>
+            <button onClick={onTrack} className="text-blue-600 text-xs font-black bg-blue-100 px-3 py-1.5 rounded-lg flex-shrink-0">تتبع</button>
+          </div>
+          <div className="mt-4 pt-4 border-t border-blue-100">
+            <DeliveryTimeline order={activeOrder} role="customer" variant="compact"/>
+          </div>
+        </div>
+      )}
+      <div className="px-4 pb-4">
+        <p className="font-black text-gray-950 mb-3">اختر نوع التوصيل</p>
+        <div className="grid grid-cols-3 gap-3">
+          {DELIVERY_TYPES.slice(0,3).map(dt=>(
+            <button key={dt.id} onClick={()=>startOrder(dt.id)} className="bg-gray-50 border rounded-2xl p-4 text-center active:scale-95 transition-transform" style={{borderColor:"var(--bc-a)"}}>
+              <div className="text-2xl mb-2">{dt.emoji}</div>
+              <div className="font-bold text-gray-950 text-sm">{dt.label}</div>
+              <div className="text-gray-400 text-xs">{dt.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CForm({ setView, form, setForm }) {
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const errs = {};
+    if (!form.pickup.trim()) errs.pickup = "الرجاء إدخال نقطة الاستلام";
+    if (!form.dropoff.trim()) errs.dropoff = "الرجاء إدخال نقطة التسليم";
+    if (!form.item.trim()) errs.item = "الرجاء تحديد نوع الشيء المطلوب توصيله";
+    if (!form.deliveryType) errs.deliveryType = "الرجاء اختيار نوع التوصيل";
+    if (!form.paymentMethod) errs.paymentMethod = "الرجاء اختيار طريقة الدفع";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const next = () => { if (validate()) setView("preview"); };
+
+  return (
+    <div>
+      <div className="bg-gray-950 text-white p-5 pt-14">
+        <button onClick={()=>setView("home")} className="flex items-center gap-2 text-gray-400 text-sm mb-4">
+          <ArrowLeft size={16} style={{transform:"scaleX(-1)"}}/> رجوع
+        </button>
+        <h2 className="text-xl font-black">طلب جديد</h2>
+        <p className="text-gray-400 text-sm mt-1">أدخل تفاصيل التوصيل</p>
+      </div>
+      <div className="p-5 space-y-5">
+        <div>
+          <div className="bg-white border-2 rounded-2xl overflow-hidden" style={{borderColor: (errors.pickup||errors.dropoff) ? "#EF4444" : "var(--bc-a)"}}>
+            <div className="p-4 border-b" style={{borderColor:"var(--bc-c)"}}>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">نقطة الاستلام</label>
+              <div className="flex items-center gap-3 mt-2">
+                <div className="w-3 h-3 bg-gray-950 rounded-full flex-shrink-0"/>
+                <input value={form.pickup} onChange={e=>setForm({...form,pickup:e.target.value})}
+                  placeholder="مثال: السوق العربي" aria-label="نقطة الاستلام" list="moterNeighborhoods"
+                  className="flex-1 text-gray-950 placeholder-gray-300 outline-none font-semibold min-w-0"/>
+              </div>
+            </div>
+            <div className="p-4">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">نقطة التسليم</label>
+              <div className="flex items-center gap-3 mt-2">
+                <div className="w-3 h-3 bg-gray-400 rounded-sm flex-shrink-0"/>
+                <input value={form.dropoff} onChange={e=>setForm({...form,dropoff:e.target.value})}
+                  placeholder="مثال: بري" aria-label="نقطة التسليم" list="moterNeighborhoods"
+                  className="flex-1 text-gray-950 placeholder-gray-300 outline-none font-semibold min-w-0"/>
+              </div>
+            </div>
+          </div>
+          <datalist id="moterNeighborhoods">
+            {NEIGHBORHOODS.map(n => <option key={n.name} value={n.name}/>)}
+          </datalist>
+          {errors.pickup && <p className="moter-field-error"><AlertCircle size={13}/> {errors.pickup}</p>}
+          {!errors.pickup && errors.dropoff && <p className="moter-field-error"><AlertCircle size={13}/> {errors.dropoff}</p>}
+        </div>
+
+        <div>
+          <label className="text-sm font-bold text-gray-700 block mb-2">نوع التوصيل</label>
+          <DeliveryTypePicker value={form.deliveryType} onChange={v=>setForm({...form, deliveryType:v})} error={errors.deliveryType}/>
+        </div>
+
+        <div>
+          <label className="text-sm font-bold text-gray-700 block mb-2">وصف الشيء المطلوب توصيله</label>
+          <input value={form.item} onChange={e=>setForm({...form,item:e.target.value})}
+            placeholder="مثال: طرد ملابس، وجبة عشاء..." aria-label="وصف الشيء المطلوب توصيله"
+            className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-950 placeholder-gray-300 focus:outline-none transition-colors" style={{borderColor: errors.item ? "#EF4444" : "var(--bc-b)"}}/>
+          {errors.item && <p className="moter-field-error"><AlertCircle size={13}/> {errors.item}</p>}
+        </div>
+
+        <div>
+          <label className="text-sm font-bold text-gray-700 block mb-2">طريقة الدفع</label>
+          <PaymentMethodPicker value={form.paymentMethod} onChange={v=>setForm({...form, paymentMethod:v})} error={errors.paymentMethod}/>
+        </div>
+
+        <div>
+          <label className="text-sm font-bold text-gray-700 block mb-2">ملاحظات للسائق (اختياري)</label>
+          <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}
+            placeholder="أي تفاصيل إضافية..." rows={3} aria-label="ملاحظات للسائق"
+            className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-950 placeholder-gray-300 focus:outline-none transition-colors resize-none" style={{borderColor:"var(--bc-b)"}}/>
+        </div>
+
+        <button onClick={next} className="w-full bg-gray-950 text-white py-4 rounded-xl font-black text-base active:scale-95 transition-transform">
+          عرض التسعيرة
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CPreview({ setView, form, profile, orders, addOrder, onConfirmed }) {
+  const { showToast, pushNotification } = useApp();
+  const [loading, setLoading] = useState(false);
+  const [promo, setPromo] = useState(null);
+
+  const p = resolveNeighborhood(form.pickup);
+  const d = resolveNeighborhood(form.dropoff);
+  const distance = Math.max(haversineKm(p, d), 0.6);
+  const baseFare = calcDeliveryPrice(distance, form.deliveryType);
+  const finalPrice = promo ? promo.finalAmount : baseFare;
+  const dtype = DELIVERY_TYPES.find(t=>t.id===form.deliveryType) || DELIVERY_TYPES[0];
+  const pmethod = PAYMENT_METHODS.find(pm=>pm.id===form.paymentMethod) || PAYMENT_METHODS[0];
+  const busyDriverIds = new Set(orders.filter(o => o.status === "in_transit").map(o => o.driverId));
+  const availableCount = getAccounts().filter(a => a.role === "driver" && a.online && !busyDriverIds.has(a.id)).length;
+
+  const confirm = () => {
+    setLoading(true);
+    setTimeout(() => {
+      const pool = getAccounts().filter(a => a.role === "driver" && a.online && !busyDriverIds.has(a.id));
+      const assigned = pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
+      const now = new Date();
+      const newOrder = {
+        id: "ORD-" + Date.now().toString().slice(-6),
+        date: now.toISOString().slice(0,10),
+        time: now.toLocaleTimeString("ar", { hour:"2-digit", minute:"2-digit", numberingSystem:"latn" }),
+        customerId: profile.id,
+        customer: profile.name,
+        customerPhone: profile.phone,
+        pickup: form.pickup.trim(),
+        dropoff: form.dropoff.trim(),
+        item: form.item.trim(),
+        deliveryType: form.deliveryType,
+        status: assigned ? "in_transit" : "pending",
+        price: finalPrice,
+        distance: Math.round(distance*10)/10,
+        driverId: assigned ? assigned.id : null,
+        driver: assigned ? assigned.name : null,
+        rating: null,
+        paymentMethod: form.paymentMethod,
+        promoCode: promo ? promo.code : null,
+        progress: 0,
+        notes: form.notes || "",
+      };
+      addOrder(newOrder);
+      setLoading(false);
+      showToast("تم إنشاء طلبك بنجاح ✅");
+      if (assigned) pushNotification("تم إسناد سائق لطلبك", `${assigned.name} في طريقه لاستلام طلبك ${newOrder.id}`);
+      else pushNotification("طلبك قيد المعالجة", `جارٍ البحث عن أقرب سائق متاح لطلبك ${newOrder.id}`);
+      onConfirmed(newOrder.id);
+    }, 900);
+  };
+
+  return (
+    <div>
+      <div className="bg-gray-950 text-white p-5 pt-14">
+        <button onClick={()=>setView("form")} className="flex items-center gap-2 text-gray-400 text-sm mb-4">
+          <ArrowLeft size={16} style={{transform:"scaleX(-1)"}}/> رجوع
+        </button>
+        <h2 className="text-xl font-black">تفاصيل الطلب</h2>
+      </div>
+      <div className="p-5 space-y-4">
+        <div className="bg-white border rounded-2xl p-5" style={{borderColor:"var(--bc-a)"}}>
+          <div className="flex items-start gap-4 pb-4 border-b" style={{borderColor:"var(--bc-c)"}}>
+            <div className="flex flex-col items-center gap-1 mt-1 flex-shrink-0">
+              <div className="w-3 h-3 bg-gray-950 rounded-full"/>
+              <div className="w-0.5 h-8 bg-gray-200"/>
+              <div className="w-3 h-3 bg-gray-400 rounded-sm"/>
+            </div>
+            <div className="flex-1 space-y-4 min-w-0">
+              <div><p className="text-xs text-gray-400">من</p><p className="font-black text-gray-950 truncate">{form.pickup||"—"}</p></div>
+              <div><p className="text-xs text-gray-400">إلى</p><p className="font-black text-gray-950 truncate">{form.dropoff||"—"}</p></div>
+            </div>
+          </div>
+          <div className="pt-4 grid grid-cols-3 gap-2 text-center">
+            {[[distance.toFixed(1),"كيلومتر"],["~"+Math.max(5,Math.round(distance*4)),"دقيقة"],[fmtNum(finalPrice),"ج.س"]].map(([v,l])=>(
+              <div key={l}><p className="text-2xl font-black text-gray-950">{v}</p><p className="text-xs text-gray-400">{l}</p></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white border rounded-2xl p-4 flex items-center gap-3" style={{borderColor:"var(--bc-a)"}}>
+          <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">{dtype.emoji}</div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-gray-950 text-sm truncate">{dtype.label} • {form.item}</p>
+            <p className="text-gray-400 text-xs truncate">{pmethod.label}</p>
+          </div>
+          <button onClick={()=>setView("form")} className="text-xs font-bold text-gray-500 underline flex-shrink-0">تعديل</button>
+        </div>
+
+        <PromoInput orderAmount={baseFare} onApplied={setPromo}/>
+
+        <div className="bg-gray-50 rounded-2xl p-4 text-sm">
+          <div className="flex justify-between py-1.5 text-gray-500">
+            <span>{distance.toFixed(1)} كم × {dtype.label}</span>
+            <span>{fmtNum(baseFare)} ج.س</span>
+          </div>
+          {promo && (
+            <div className="flex justify-between py-1.5 text-green-600 font-semibold">
+              <span>خصم ({promo.code})</span>
+              <span>-{fmtNum(promo.discount)} ج.س</span>
+            </div>
+          )}
+          <div className="flex justify-between py-1.5 border-t font-black text-gray-950 mt-1" style={{borderColor:"var(--bc-b)"}}>
+            <span>الإجمالي</span>
+            <span>{fmtNum(finalPrice)} ج.س</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 bg-green-50 border border-green-100 rounded-xl p-3">
+          <CheckCircle size={16} className="text-green-600 flex-shrink-0"/>
+          <p className="text-green-800 text-sm font-semibold">{availableCount} سائقون متاحون الآن في منطقتك</p>
+        </div>
+        <button onClick={confirm} disabled={loading}
+          className="w-full bg-gray-950 text-white py-4 rounded-xl font-black text-base active:scale-95 transition-transform flex items-center justify-center gap-2">
+          {loading && <Spinner/>}
+          {loading ? "جارٍ تأكيد الطلب..." : `تأكيد الطلب — ${fmtNum(finalPrice)} ج.س`}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CTracking({ setView, order, orders, updateOrder }) {
+  const { showToast } = useApp();
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [copied, setCopied] = useState(false);
+
+  if (!order) {
+    return (
+      <div className="p-5">
+        <EmptyState emoji="📦" title="لا يوجد طلب لعرضه" subtitle="عد إلى الرئيسية لإنشاء طلب جديد"
+          action={<button onClick={()=>setView("home")} className="mt-4 bg-gray-950 text-white px-6 py-2.5 rounded-xl font-bold text-sm">الرئيسية</button>}/>
+      </div>
+    );
+  }
+
+  const done = order.status === "delivered";
+  const cancelled = order.status === "cancelled";
+  const progress = order.progress || 0;
+  const eta = Math.max(1, Math.round((1-progress)*15));
+  const driverAccount = order.driverId ? getAccounts().find(a => a.id === order.driverId) : null;
+  const driverRating = order.driverId ? driverStats(order.driverId, orders).rating : null;
+
+  const copyId = () => {
+    try { navigator.clipboard.writeText(order.id); } catch (e) {}
+    setCopied(true);
+    showToast("تم نسخ رقم الطلب");
+    setTimeout(()=>setCopied(false), 1500);
+  };
+
+  const doCancel = () => {
+    updateOrder(order.id, { status:"cancelled" });
+    setConfirmCancel(false);
+    showToast("تم إلغاء الطلب", "error");
+    setView("home");
+  };
+
+  const submitRating = (v) => {
+    setRating(v);
+    updateOrder(order.id, { rating: v });
+    showToast("شكراً على تقييمك! ⭐");
+  };
+
+  return (
+    <div>
+      <div className={`text-white p-5 pt-14 transition-colors ${done?"bg-green-800":cancelled?"bg-gray-600":"bg-gray-950"}`}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h2 className="text-xl font-black">{done?"تم التوصيل! ✅":cancelled?"تم إلغاء الطلب":"جاري التوصيل"}</h2>
+            <button onClick={copyId} className="flex items-center gap-1.5 text-sm mt-1 opacity-60">
+              {order.id} <Copy size={12}/> {copied && "✓"}
+            </button>
+          </div>
+          {!done && !cancelled && <div className="text-right flex-shrink-0"><p className="text-3xl font-black">{eta}</p><p className="text-xs opacity-50">دقيقة</p></div>}
+        </div>
+      </div>
+      <div className="p-4 space-y-4">
+        {!cancelled && <DeliveryTimeline order={order} role="customer" eta={eta} variant="full"/>}
+        {cancelled ? (
+          <div className="text-center py-10 bg-white border rounded-2xl" style={{borderColor:"var(--bc-a)"}}>
+            <div className="text-5xl mb-4">🚫</div>
+            <p className="font-black text-gray-950 text-lg mb-1">تم إلغاء هذا الطلب</p>
+            <p className="text-gray-400 text-sm mb-5">يمكنك إنشاء طلب جديد في أي وقت</p>
+            <button onClick={()=>setView("home")} className="bg-gray-950 text-white px-8 py-3 rounded-xl font-black">العودة للرئيسية</button>
+          </div>
+        ) : !done ? (
+          <>
+            {order.status === "pending" ? (
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-center">
+                <p className="font-black text-amber-800 text-sm">⏳ جارٍ البحث عن سائق قريب منك...</p>
+              </div>
+            ) : (
+              <div className="bg-white border rounded-2xl p-4 flex items-center gap-3" style={{borderColor:"var(--bc-a)"}}>
+                <div className="w-14 h-14 bg-gray-950 text-white rounded-2xl flex items-center justify-center text-2xl font-black flex-shrink-0">{order.driver ? order.driver[0] : "؟"}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-black text-gray-950 truncate">{order.driver || "سائق موتر"}</div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Star size={12} className="text-amber-400 fill-amber-400"/>
+                    <span className="text-sm text-gray-500 truncate">{driverRating != null ? driverRating.toFixed(1) : "5.0"} • {driverAccount ? driverAccount.vehicle : ""}</span>
+                  </div>
+                </div>
+                {driverAccount && (
+                  <a href={`tel:${driverAccount.phone.replace(/\s/g,"")}`} className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Phone size={17} className="text-gray-700"/>
+                  </a>
+                )}
+              </div>
+            )}
+            <div className="bg-white border rounded-2xl p-4" style={{borderColor:"var(--bc-a)"}}>
+              <div className="flex justify-between text-sm py-1"><span className="text-gray-400">نوع التوصيل</span><span className="font-bold text-gray-950">{(DELIVERY_TYPES.find(t=>t.id===order.deliveryType)||{}).label}</span></div>
+              <div className="flex justify-between text-sm py-1"><span className="text-gray-400">طريقة الدفع</span><span className="font-bold text-gray-950">{(PAYMENT_METHODS.find(p=>p.id===order.paymentMethod)||{}).label}</span></div>
+              <div className="flex justify-between text-sm py-1"><span className="text-gray-400">المبلغ</span><span className="font-black text-gray-950">{fmtNum(order.price)} ج.س</span></div>
+            </div>
+            {order.status === "pending" && (
+              <button onClick={()=>setConfirmCancel(true)} className="w-full bg-red-50 text-red-600 py-3.5 rounded-xl font-bold text-sm">إلغاء الطلب</button>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-6 bg-white border rounded-2xl" style={{borderColor:"var(--bc-a)"}}>
+            <div className="text-5xl mb-4">🎉</div>
+            <p className="font-black text-gray-950 text-lg mb-1">تم توصيل طلبك!</p>
+            <p className="text-gray-400 text-sm mb-5">{order.rating ? "شكراً على تقييمك" : `قيّم تجربتك مع السائق ${order.driver||""}`}</p>
+            <div className="flex justify-center gap-2 mb-5">
+              {[1,2,3,4,5].map(s=>(
+                <button key={s} onClick={()=>submitRating(s)} disabled={!!order.rating} className="text-3xl transition-transform active:scale-110">
+                  {s<=(order.rating||rating)?"⭐":"☆"}
+                </button>
+              ))}
+            </div>
+            <button onClick={()=>setView("home")} className="bg-gray-950 text-white px-8 py-3 rounded-xl font-black">
+              العودة للرئيسية
+            </button>
+          </div>
+        )}
+      </div>
+      <ConfirmModal
+        open={confirmCancel}
+        danger
+        title="إلغاء الطلب"
+        message="هل أنت متأكد من إلغاء هذا الطلب؟"
+        confirmLabel="إلغاء الطلب"
+        onConfirm={doCancel}
+        onCancel={()=>setConfirmCancel(false)}
+      />
+    </div>
+  );
+}
+
+function CHistory({ orders }) {
+  const { t } = useApp();
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const shown = q ? orders.filter(o => o.id.toLowerCase().includes(q) || o.pickup.toLowerCase().includes(q) || o.dropoff.toLowerCase().includes(q) || o.item.toLowerCase().includes(q)) : orders;
+  return (
+    <div>
+      <div className="bg-gray-950 text-white p-5 pt-14">
+        <h2 className="text-xl font-black">طلباتي</h2>
+        <p className="text-gray-400 text-sm mt-1">سجل جميع طلباتك</p>
+      </div>
+      <div className="px-4 pt-4">
+        <div className="relative">
+          <SearchIcon size={16} className="absolute top-1/2 -translate-y-1/2 right-4 text-gray-300"/>
+          <input value={query} onChange={e=>setQuery(e.target.value)} placeholder={t("search_ph_orders")}
+            aria-label={t("search_ph_orders")}
+            className="w-full border-2 rounded-xl pr-11 pl-4 py-2.5 text-sm text-gray-950 placeholder-gray-300 focus:outline-none focus:border-gray-950 transition-colors" style={{borderColor:"var(--bc-b)"}}/>
+        </div>
+      </div>
+      {shown.length === 0 && (
+        <EmptyState emoji="📦" title={query ? t("no_results_title") : t("no_history_title")}
+          subtitle={query ? t("no_results_orders") : t("no_history_sub")}
+          action={query && <button onClick={()=>setQuery("")} className="mt-4 text-sm font-bold text-gray-950 underline">{t("clear_search")}</button>}/>
+      )}
+      <div className="p-4 space-y-3">
+        {shown.map(o=>{
+          const dtype = DELIVERY_TYPES.find(t=>t.id===o.deliveryType);
+          return (
+          <div key={o.id} className="bg-white border rounded-2xl p-4" style={{borderColor:"var(--bc-a)"}}>
+            <div className="flex justify-between items-center mb-3 gap-2">
+              <span className="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-0.5 rounded-lg">{o.id}</span>
+              <Badge status={o.status}/>
+            </div>
+            <div className="flex items-start gap-3 mb-3">
+              <div className="flex flex-col items-center gap-1 mt-1 flex-shrink-0">
+                <div className="w-2.5 h-2.5 bg-gray-950 rounded-full"/>
+                <div className="w-px h-5 bg-gray-200"/>
+                <div className="w-2.5 h-2.5 bg-gray-400 rounded-sm"/>
+              </div>
+              <div className="space-y-2 min-w-0">
+                <p className="text-sm font-bold text-gray-950 truncate">{o.pickup}</p>
+                <p className="text-sm text-gray-500 truncate">{o.dropoff}</p>
+              </div>
+            </div>
+            <div className="flex justify-between items-center pt-3 border-t text-xs" style={{borderColor:"var(--bc-c)"}}>
+              <span className="text-gray-400 truncate">{dtype ? dtype.emoji : ""} {o.time} • {o.item}</span>
+              <span className="font-black text-gray-950 flex-shrink-0">{o.price} ج.س</span>
+            </div>
+            {o.status === "delivered" && o.rating && (
+              <div className="flex justify-end mt-2"><RatingStars value={o.rating} size={11}/></div>
+            )}
+          </div>
+        );})}
+      </div>
+    </div>
+  );
+}
+
+function CProfile({ onLogout, setView, profile, orderCount }) {
+  const { notifications } = useApp();
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const doLogout = async () => { setLoggingOut(true); await onLogout(); };
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [offersOpen, setOffersOpen] = useState(false);
+  useScrollLock(offersOpen);
+  const unread = notifications.filter(n=>!n.read).length;
+  const items = [
+    {Icon:Package,label:"طلباتي",sub:`${orderCount} طلب`, action:()=>setView("history")},
+    {Icon:Tag,label:"العروض والخصومات",sub:`${PROMO_CODES.filter(p=>p.active).length} نشط`, action:()=>setOffersOpen(true)},
+    {Icon:Bell,label:"الإشعارات",sub: unread>0 ? `${unread} جديد` : "", action:()=>setNotifOpen(true)},
+    {Icon:Settings,label:"الإعدادات",sub:"", action:()=>setView("settings")},
+  ];
+  return (
+    <div>
+      <div className="bg-gray-950 text-white p-8 pt-14 text-center">
+        {profile.photo ? (
+          <img src={profile.photo} alt={profile.name} className="w-20 h-20 rounded-3xl object-cover mx-auto mb-3"/>
+        ) : (
+          <div className="w-20 h-20 bg-white text-gray-950 rounded-3xl flex items-center justify-center text-3xl font-black mx-auto mb-3">{profile.name[0]}</div>
+        )}
+        <h2 className="text-xl font-black">{profile.name}</h2>
+        <p className="text-gray-500 text-sm" dir="ltr">{profile.phone}</p>
+      </div>
+      <div className="p-5 space-y-3">
+        {items.map(({Icon:Ic,label,sub,action})=>(
+          <button key={label} onClick={action} className="w-full bg-white border rounded-xl p-4 flex items-center gap-3 active:bg-gray-50" style={{borderColor:"var(--bc-a)"}}>
+            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><Ic size={17} className="text-gray-700"/></div>
+            <span className="font-bold text-gray-950 flex-1 min-w-0 truncate text-right">{label}</span>
+            {sub && <span className="text-gray-400 text-sm flex-shrink-0 whitespace-nowrap">{sub}</span>}
+            <ChevronRight size={15} className="text-gray-300 flex-shrink-0" style={{transform:"scaleX(-1)"}}/>
+          </button>
+        ))}
+        <NotificationsModal open={notifOpen} onClose={()=>setNotifOpen(false)}/>
+        <button onClick={()=>setConfirmLogout(true)} className="w-full bg-red-50 border border-red-100 rounded-xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0"><LogOut size={17} className="text-red-500"/></div>
+          <span className="font-bold text-red-600 flex-1 min-w-0 truncate text-right">تسجيل الخروج</span>
+        </button>
+      </div>
+      {offersOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4 sm:items-center sm:pb-0" style={{background:"rgba(10,10,10,0.55)"}} onClick={()=>setOffersOpen(false)}>
+          <div className="w-full bg-white rounded-3xl overflow-hidden" style={{maxWidth:420, maxHeight:"75vh"}} onClick={e=>e.stopPropagation()}>
+            <div className="p-5 border-b flex items-center justify-between" style={{borderColor:"var(--bc-a)"}}>
+              <h3 className="font-black text-gray-950">العروض والخصومات</h3>
+              <button onClick={()=>setOffersOpen(false)} aria-label="إغلاق" className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={14} className="text-gray-600"/></button>
+            </div>
+            <div className="p-4 space-y-3 overflow-auto" style={{maxHeight:"55vh"}}>
+              {PROMO_CODES.filter(p=>p.active).map(p=>(
+                <div key={p.code} className="bg-gray-50 border rounded-2xl p-4 flex items-center justify-between gap-3" style={{borderColor:"var(--bc-a)"}}>
+                  <div className="min-w-0">
+                    <p className="font-black text-gray-950 text-sm truncate">{p.label}</p>
+                    <p className="text-gray-400 text-xs" dir="ltr">{p.code}</p>
+                  </div>
+                  <button onClick={()=>{ try{ navigator.clipboard.writeText(p.code); }catch(e){} }} className="bg-gray-950 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 flex-shrink-0">
+                    <Copy size={12}/> نسخ
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      <ConfirmModal
+        open={confirmLogout}
+        danger
+        loading={loggingOut}
+        loadingLabel="جارٍ تسجيل الخروج..."
+        title="تسجيل الخروج"
+        message="هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟"
+        confirmLabel="تسجيل الخروج"
+        onConfirm={doLogout}
+        onCancel={()=>setConfirmLogout(false)}
+      />
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DRIVER APP
+// ══════════════════════════════════════════════════════════════════════════════
+function DriverApp({ view, setView, onLogout, onAccountDeleted, currentRole, onSwitchRole }) {
+  const { t, orders, updateOrder, account, updateProfile, showToast } = useApp();
+  const profile = account;
+  const setProfile = updateProfile;
+  const [onlineOverride, setOnlineOverride] = useState(null); // تحديث متفائل فوري بينما يُحفظ التغيير الحقيقي
+  const online = onlineOverride !== null ? onlineOverride : !!account.online;
+  const setOnline = (updater) => {
+    const next = typeof updater === "function" ? updater(online) : updater;
+    setOnlineOverride(next);
+    updateProfile({ online: next })
+      .then(() => setOnlineOverride(null))
+      .catch(() => { setOnlineOverride(null); showToast("تعذّر تحديث حالة الاتصال", "error"); });
+  };
+
+  const pending = orders.filter(o => o.status === "pending");
+  const activeOrder = orders.find(o => o.driverId === profile.id && o.status === "in_transit") || null;
+
+  useEffect(() => {
+    if (!activeOrder || view !== "active") return;
+    const timer = setInterval(() => {
+      updateOrder(activeOrder.id, (o) => ({ progress: Math.min((o.progress || 0) + 0.006, 1) }));
+    }, 100);
+    return () => clearInterval(timer);
+  }, [activeOrder && activeOrder.id, view]);
+
+  const navItems = [
+    {id:"dashboard", Icon:Home,    label:t("nav_home")},
+    {id:"orders",    Icon:Package, label:t("nav_orders")},
+    {id:"earnings",  Icon:Wallet,  label:t("nav_earnings")},
+    {id:"profile",   Icon:User,    label:t("nav_profile")},
+  ];
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col" dir="rtl">
+      <div className="flex-1 overflow-auto pb-20 view-transition" key={view}>
+        {view==="dashboard" && <DDash profile={profile} online={online} setOnline={setOnline} setView={setView} orders={orders} pending={pending} activeOrder={activeOrder}/>}
+        {view==="orders"    && <DOrders pending={pending} profile={profile} updateOrder={updateOrder} setView={setView}/>}
+        {view==="active"    && <DActive order={activeOrder} setView={setView} updateOrder={updateOrder}/>}
+        {view==="earnings"  && <DEarnings profile={profile} orders={orders}/>}
+        {view==="profile"   && <DProfile onLogout={onLogout} setView={setView} profile={profile} orders={orders} online={online} setOnline={setOnline}/>}
+        {view==="settings"  && <SettingsScreen setView={setView} backTo="profile" profile={profile} setProfile={setProfile} roleLabel={t("role_driver_title")} currentRole={currentRole} onSwitchRole={onSwitchRole} onAccountDeleted={onAccountDeleted}/>}
+      </div>
+      {["dashboard","orders","earnings","profile"].includes(view) && (
+        <nav className="fixed bottom-0 inset-x-0 bg-white border-t flex" style={{borderColor:"var(--bc-d)", maxWidth:480, margin:"0 auto"}}>
+          {navItems.map(({id,Icon:Ic,label}) => (
+            <button key={id} onClick={()=>setView(id)} aria-label={label} className={`flex-1 min-w-0 flex flex-col items-center py-3 px-1 gap-1 transition-colors ${view===id?"text-gray-950":"text-gray-300"}`}>
+              <Ic size={22} strokeWidth={view===id?2.5:1.5} className="flex-shrink-0"/>
+              <span className="w-full text-center truncate text-xs font-semibold">{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+    </div>
+  );
+}
+
+function DDash({ profile, online, setOnline, setView, orders, pending, activeOrder }) {
+  const s = driverStats(profile.id, orders);
+  const todayDeliveries = orders.filter(o => o.driverId===profile.id && o.status==="delivered" && o.date===todayISO());
+  const todayEarnings = todayDeliveries.reduce((sum,o)=>sum+o.price,0);
+  const recentTrips = orders.filter(o=>o.driverId===profile.id && o.status==="delivered")
+    .sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).slice(0,3);
+
+  return (
+    <div>
+      <div className={`text-white p-5 pt-14 transition-colors duration-500 ${online?"bg-gray-950":"bg-gray-600"}`}>
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h1 className="text-xl font-black">{profile.name}</h1>
+            <div className="flex items-center gap-2 mt-0.5">
+              <div className={`w-2 h-2 rounded-full ${online?"bg-green-400":"bg-gray-400"}`}/>
+              <span className="text-sm opacity-60">{online?"متصل ونشط":"غير متصل"}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <NotificationBell variant="dark"/>
+            <button onClick={()=>setOnline(v=>!v)} aria-label={online?"إيقاف الاتصال":"تفعيل الاتصال"} aria-pressed={online}
+              className={`relative w-16 h-8 rounded-full flex-shrink-0 transition-colors ${online?"bg-green-500":"bg-gray-700"}`}>
+              <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 ${online?"left-9":"left-1"}`}/>
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[[String(todayDeliveries.length),"رحلات اليوم"],[fmtNum(todayEarnings),"ج.س اليوم"],[s.rating.toFixed(1)+" ★","تقييمي"]].map(([v,l])=>(
+            <div key={l} className="bg-white/10 rounded-xl p-3 text-center">
+              <p className="font-black text-sm">{v}</p>
+              <p className="text-xs opacity-50 mt-0.5">{l}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="p-4 space-y-4">
+        {activeOrder ? (
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+            <div className="flex justify-between items-center mb-3">
+              <p className="font-black text-blue-900">طلب نشط — {activeOrder.id}</p>
+              <Badge status="in_transit"/>
+            </div>
+            <div className="my-3">
+              <DeliveryTimeline order={activeOrder} role="driver" variant="compact"/>
+            </div>
+            <button onClick={()=>setView("active")} className="w-full mt-3 bg-gray-950 text-white py-3 rounded-xl font-black text-sm">
+              إدارة التوصيل الآن
+            </button>
+          </div>
+        ) : online ? (
+          <div className="bg-green-50 border border-green-100 rounded-2xl p-6 text-center">
+            <div className="text-4xl mb-3">🏍️</div>
+            <p className="font-black text-green-900">أنت متاح لاستقبال الطلبات</p>
+            <p className="text-green-600 text-sm mt-1 mb-4">{pending.length} طلبات في انتظارك</p>
+            <button onClick={()=>setView("orders")} className="bg-gray-950 text-white px-8 py-3 rounded-xl font-black text-sm">عرض الطلبات</button>
+          </div>
+        ) : (
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 text-center">
+            <div className="text-4xl mb-3">😴</div>
+            <p className="font-black text-gray-600">أنت غير متصل</p>
+            <p className="text-gray-400 text-sm mt-1">فعّل التبديل أعلاه لاستقبال الطلبات</p>
+          </div>
+        )}
+        <div>
+          <p className="font-black text-gray-950 mb-3">آخر رحلاتي</p>
+          {recentTrips.length===0 ? (
+            <p className="text-gray-300 text-sm text-center py-6 bg-gray-50 rounded-xl">لا توجد رحلات مكتملة بعد</p>
+          ) : (
+            <div className="space-y-2">
+              {recentTrips.map(o=>(
+                <div key={o.id} className="bg-white border rounded-xl p-4 flex items-center gap-3" style={{borderColor:"var(--bc-a)"}}>
+                  <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <CheckCircle size={16} className="text-green-500"/>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-950 truncate">{o.pickup} ← {o.dropoff}</p>
+                    <p className="text-xs text-gray-400">{o.time} • {o.distance} كم</p>
+                  </div>
+                  <span className="font-black text-gray-950 text-sm flex-shrink-0">{o.price} ج.س</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DOrders({ pending, profile, updateOrder, setView }) {
+  const { t, showToast, pushNotification } = useApp();
+  const [query, setQuery] = useState("");
+  const [acceptingId, setAcceptingId] = useState(null);
+  const q = query.trim().toLowerCase();
+  const shown = q ? pending.filter(o => o.item.toLowerCase().includes(q) || o.pickup.toLowerCase().includes(q) || o.dropoff.toLowerCase().includes(q)) : pending;
+
+  const accept = (o) => {
+    setAcceptingId(o.id);
+    setTimeout(() => {
+      updateOrder(o.id, { driverId: profile.id, driver: profile.name, status:"in_transit", progress:0 });
+      showToast(`تم قبول الطلب ${o.id}`);
+      pushNotification("تم إسناد سائق لطلبك", `${profile.name} في طريقه لاستلام طلبك ${o.id}`);
+      setView("active");
+    }, 700);
+  };
+
+  return (
+    <div>
+      <div className="bg-gray-950 text-white p-5 pt-14">
+        <h2 className="text-xl font-black">الطلبات المتاحة</h2>
+        <p className="text-gray-400 text-sm mt-1">{pending.length} طلبات في منطقتك الآن</p>
+      </div>
+      <div className="p-4 pb-0">
+        <div className="relative">
+          <SearchIcon size={16} className="absolute top-1/2 -translate-y-1/2 right-4 text-gray-300"/>
+          <input value={query} onChange={e=>setQuery(e.target.value)} placeholder={t("search_ph_orders")}
+            aria-label={t("search_ph_orders")}
+            className="w-full border-2 rounded-xl pr-11 pl-4 py-2.5 text-sm text-gray-950 placeholder-gray-300 focus:outline-none focus:border-gray-950 transition-colors" style={{borderColor:"var(--bc-b)"}}/>
+        </div>
+      </div>
+      {shown.length === 0 && (
+        <EmptyState emoji="🏍️" title={query ? t("no_results_title") : t("no_pending_orders_title")}
+          subtitle={query ? t("no_results_orders") : t("no_pending_orders_sub")}
+          action={query && <button onClick={()=>setQuery("")} className="mt-4 text-sm font-bold text-gray-950 underline">{t("clear_search")}</button>}/>
+      )}
+      <div className="p-4 space-y-4">
+        {shown.map(o=>{
+          const dtype = DELIVERY_TYPES.find(dt=>dt.id===o.deliveryType);
+          const pmethod = PAYMENT_METHODS.find(p=>p.id===o.paymentMethod);
+          return (
+          <div key={o.id} className="bg-white border-2 rounded-2xl overflow-hidden" style={{borderColor:"var(--bc-a)"}}>
+            <div className="p-4">
+              <div className="flex justify-between items-start gap-3 mb-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-black text-gray-950 text-base truncate">{o.customer}</p>
+                  <p className="text-gray-400 text-xs truncate">{dtype?dtype.emoji+" ":""}{o.item}</p>
+                </div>
+                <div className="text-left flex-shrink-0">
+                  <p className="text-2xl font-black text-gray-950 whitespace-nowrap">{o.price}</p>
+                  <p className="text-xs text-gray-400 whitespace-nowrap">جنيه سوداني</p>
+                </div>
+              </div>
+              <div className="space-y-2.5 py-3 border-y" style={{borderColor:"var(--bc-c)"}}>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-2.5 h-2.5 bg-gray-950 rounded-full flex-shrink-0"/>
+                  <p className="text-sm font-semibold text-gray-950 truncate min-w-0">{o.pickup}</p>
+                </div>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-2.5 h-2.5 bg-gray-400 rounded-sm flex-shrink-0"/>
+                  <p className="text-sm text-gray-500 truncate min-w-0">{o.dropoff}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-3 text-xs text-gray-400 flex-wrap gap-1">
+                <span>📍 {o.distance} كم</span>
+                <span>⏱ ~{Math.round(o.distance*4)} دقيقة</span>
+                <span>{pmethod ? pmethod.label : ""}</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 border-t" style={{borderColor:"var(--bc-d)"}}>
+              <button disabled={acceptingId===o.id} className="py-3.5 text-gray-400 font-semibold text-sm border-l active:bg-gray-50" style={{borderColor:"var(--bc-d)"}}>
+                تجاهل
+              </button>
+              <button onClick={()=>accept(o)} disabled={acceptingId===o.id}
+                className="py-3.5 bg-gray-950 text-white font-black text-sm active:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                {acceptingId===o.id && <Spinner/>}
+                {acceptingId===o.id ? "جارٍ القبول..." : "قبول الطلب"}
+              </button>
+            </div>
+          </div>
+        );})}
+      </div>
+    </div>
+  );
+}
+
+function DActive({ order, setView, updateOrder }) {
+  const { showToast } = useApp();
+
+  if (!order) {
+    return (
+      <div className="p-5">
+        <EmptyState emoji="🏍️" title="لا توجد توصيلة جارية" subtitle="اقبل طلباً من قائمة الطلبات المتاحة"
+          action={<button onClick={()=>setView("orders")} className="mt-4 bg-gray-950 text-white px-6 py-2.5 rounded-xl font-bold text-sm">الطلبات المتاحة</button>}/>
+      </div>
+    );
+  }
+
+  const progress = order.progress || 0;
+  const done = progress >= 1;
+  const eta = Math.max(1, Math.round((1-progress)*15));
+  const canFinish = progress >= 0.85;
+
+  const openNavigation = () => {
+    const dest = resolveNeighborhood(order.dropoff);
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}`, "_blank");
+  };
+
+  const finish = () => {
+    updateOrder(order.id, { status:"delivered", progress:1 });
+    showToast("تم تسليم الطلب بنجاح ✅");
+    setView("dashboard");
+  };
+
+  return (
+    <div>
+      <div className={`text-white p-5 pt-14 transition-colors ${done?"bg-green-800":"bg-gray-950"}`}>
+        <div className="flex justify-between items-start">
+          <div className="min-w-0">
+            <p className="text-sm opacity-60">جاري توصيل</p>
+            <h2 className="text-xl font-black truncate">{order.id}</h2>
+          </div>
+          <div className="text-left flex-shrink-0">
+            <p className="text-3xl font-black">{done?"✓":eta}</p>
+            <p className="text-xs opacity-50">{done?"اكتمل":"دقيقة"}</p>
+          </div>
+        </div>
+      </div>
+      <div className="p-4 space-y-4">
+        <DeliveryTimeline order={order} role="driver" eta={eta} variant="full"/>
+        <div className="bg-white border rounded-2xl p-4" style={{borderColor:"var(--bc-a)"}}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center font-black text-gray-950 text-xl flex-shrink-0">
+              {order.customer[0]}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-gray-950 truncate">{order.customer}</p>
+              <p className="text-gray-400 text-sm truncate">{order.item}</p>
+            </div>
+            <a href={`tel:${(order.customerPhone||"").replace(/\s/g,"")}`} className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Phone size={17} className="text-gray-700"/>
+            </a>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {[["الاستلام",order.pickup],["التسليم",order.dropoff]].map(([k,v])=>(
+              <div key={k} className="bg-gray-50 rounded-xl p-3 min-w-0">
+                <p className="text-gray-400 text-xs">{k}</p>
+                <p className="font-bold text-gray-950 truncate">{v}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        {done ? (
+          <button onClick={finish} className="w-full bg-green-600 text-white py-4 rounded-xl font-black text-base active:scale-95 transition-transform">
+            ✓ تأكيد إتمام التوصيل
+          </button>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <a href="tel:+249900000000" className="bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
+                <Phone size={14}/> الدعم الفني
+              </a>
+              <button onClick={openNavigation} className="bg-gray-950 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2">
+                <Navigation size={15}/> التنقل
+              </button>
+            </div>
+            <button onClick={finish} disabled={!canFinish}
+              className="w-full bg-green-500 text-white py-3.5 rounded-xl font-black text-sm active:scale-95 transition-transform">
+              {canFinish ? "تأكيد التسليم ✅" : `اقترب من الوجهة... ${Math.round(progress*100)}%`}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DEarnings({ profile, orders }) {
+  const { showToast } = useApp();
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawals, setWithdrawals] = useLocalStorageState(LS_WITHDRAWALS, []);
+  const [destination, setDestination] = useState("bankak");
+
+  const mine = orders.filter(o => o.driverId === profile.id && o.status === "delivered");
+  const s = driverStats(profile.id, orders);
+
+  const dayLabels = ["أحد","اثن","ثلا","أرب","خمس","جمع","سبت"];
+  const weekTotals = [0,0,0,0,0,0,0];
+  mine.forEach(o => { const day = new Date(o.date + "T00:00:00").getDay(); weekTotals[day] += o.price; });
+  const todayIdx = new Date(todayISO() + "T00:00:00").getDay();
+  const weekSum = weekTotals.reduce((a,b)=>a+b,0);
+  const todaySum = mine.filter(o=>o.date===todayISO()).reduce((a,o)=>a+o.price,0);
+
+  const myWithdrawals = withdrawals.filter(w => w.driverId === profile.id);
+  const totalWithdrawn = myWithdrawals.reduce((sum,w)=>sum+w.amount,0);
+  const available = Math.max(s.earnings - totalWithdrawn, 0);
+
+  const confirmWithdraw = () => {
+    const w = { id:"WD-"+Date.now().toString().slice(-6), driverId: profile.id, amount: available, destination, date: todayISO() };
+    setWithdrawals(ws => [w, ...ws]);
+    setWithdrawOpen(false);
+    showToast(`تم إرسال طلب سحب ${fmtNum(available)} ج.س بنجاح`);
+  };
+
+  return (
+    <div>
+      <div className="bg-gray-950 text-white p-5 pt-14">
+        <h2 className="text-xl font-black">أرباحي</h2>
+        <div className="mt-4">
+          <p className="text-4xl font-black">{fmtNum(weekSum)}</p>
+          <p className="text-gray-400 text-sm mt-0.5">جنيه سوداني هذا الأسبوع</p>
+        </div>
+      </div>
+      <div className="p-5 space-y-4">
+        <div className="bg-white border rounded-2xl p-5" style={{borderColor:"var(--bc-a)"}}>
+          <p className="text-gray-400 text-xs mb-1">الرصيد المتاح للسحب</p>
+          <p className="text-3xl font-black text-gray-950 mb-4">{fmtNum(available)} ج.س</p>
+          <button onClick={()=>setWithdrawOpen(true)} disabled={available<=0}
+            className="w-full bg-gray-950 text-white py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2">
+            <ArrowDownCircle size={16}/> طلب سحب الأرباح
+          </button>
+        </div>
+        <div className="bg-white border rounded-2xl p-5" style={{borderColor:"var(--bc-a)"}}>
+          <p className="font-black text-gray-950 mb-4">الأرباح اليومية</p>
+          <MiniBarChart labels={dayLabels} values={weekTotals} highlightIndex={todayIdx}/>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[["إجمالي الأرباح",`${fmtNum(s.earnings)} ج.س`],["هذا الأسبوع",`${fmtNum(weekSum)} ج.س`],["اليوم",`${fmtNum(todaySum)} ج.س`],["تقييمي",`${s.rating.toFixed(1)} ★`]].map(([l,v])=>(
+            <div key={l} className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-gray-400 text-xs mb-1">{l}</p>
+              <p className="font-black text-gray-950">{v}</p>
+            </div>
+          ))}
+        </div>
+        <div className="bg-white border rounded-2xl p-4" style={{borderColor:"var(--bc-a)"}}>
+          <p className="font-black text-gray-950 mb-3">إجمالي الرحلات</p>
+          {[["رحلات اليوم", mine.filter(o=>o.date===todayISO()).length],["إجمالي الرحلات", s.deliveries]].map(([l,v])=>(
+            <div key={l} className="flex justify-between py-2.5 border-b last:border-0 text-sm" style={{borderColor:"var(--bc-c)"}}>
+              <span className="text-gray-500">{l}</span>
+              <span className="font-black text-gray-950">{v}</span>
+            </div>
+          ))}
+        </div>
+        <div className="bg-white border rounded-2xl overflow-hidden" style={{borderColor:"var(--bc-a)"}}>
+          <div className="px-5 py-4 border-b" style={{borderColor:"var(--bc-c)"}}><p className="font-black text-gray-950">آخر التوصيلات</p></div>
+          {mine.length === 0 ? (
+            <p className="text-gray-300 text-sm text-center py-8">لا توجد توصيلات مكتملة بعد</p>
+          ) : mine.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).slice(0,6).map((o,i,arr)=>(
+            <div key={o.id} className={`px-5 py-4 flex items-center justify-between gap-2 ${i<arr.length-1?"border-b":""}`} style={{borderColor:"var(--bc-e)"}}>
+              <div className="min-w-0">
+                <p className="font-bold text-gray-950 text-sm truncate">{o.pickup} ← {o.dropoff}</p>
+                <p className="text-gray-400 text-xs">{o.date} • {o.time}</p>
+              </div>
+              <span className="font-black text-gray-950 text-sm flex-shrink-0">+{o.price} ج.س</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {withdrawOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4 sm:items-center sm:pb-0" style={{background:"rgba(10,10,10,0.55)"}} onClick={()=>setWithdrawOpen(false)}>
+          <div className="w-full bg-white rounded-3xl p-5" style={{maxWidth:420}} onClick={e=>e.stopPropagation()}>
+            <h3 className="font-black text-gray-950 mb-4">طلب سحب الأرباح</h3>
+            <p className="text-gray-400 text-sm mb-1">المبلغ المتاح</p>
+            <p className="text-2xl font-black text-gray-950 mb-4">{fmtNum(available)} ج.س</p>
+            <p className="text-sm font-bold text-gray-700 mb-2">وجهة التحويل</p>
+            <div className="space-y-2 mb-5">
+              {[["bankak","بنكك (Bankak)"],["bank","حساب بنكي"]].map(([id,label])=>(
+                <button key={id} onClick={()=>setDestination(id)}
+                  className={`w-full p-3.5 rounded-xl border-2 text-right font-bold text-sm ${destination===id?"border-gray-950 bg-gray-50":"bg-white"}`}
+                  style={destination!==id?{borderColor:"var(--bc-b)"}:{}}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={()=>setWithdrawOpen(false)} className="py-3.5 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm">إلغاء</button>
+              <button onClick={confirmWithdraw} className="py-3.5 rounded-xl bg-gray-950 text-white font-bold text-sm">تأكيد السحب</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DProfile({ onLogout, setView, profile, orders, online, setOnline }) {
+  const s = driverStats(profile.id, orders);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const doLogout = async () => { setLoggingOut(true); await onLogout(); };
+  return (
+    <div>
+      <div className="bg-gray-950 text-white p-8 pt-14 text-center">
+        {profile.photo ? (
+          <img src={profile.photo} alt={profile.name} className="w-20 h-20 rounded-3xl object-cover mx-auto mb-3"/>
+        ) : (
+          <div className="w-20 h-20 bg-white text-gray-950 rounded-3xl flex items-center justify-center text-3xl font-black mx-auto mb-3">{profile.name[0]}</div>
+        )}
+        <h2 className="text-xl font-black">{profile.name}</h2>
+        <p className="text-gray-500 text-sm" dir="ltr">{profile.phone}</p>
+        <div className="flex justify-center items-center gap-1 mt-2">
+          <Star size={14} className="text-amber-400 fill-amber-400"/>
+          <span className="text-amber-400 font-black">{s.rating.toFixed(1)}</span>
+          <span className="text-gray-500 text-sm">({s.deliveries} رحلة)</span>
+        </div>
+      </div>
+      <div className="p-5 space-y-3">
+        <div className="bg-white border rounded-xl p-4 flex items-center justify-between gap-2" style={{borderColor:"var(--bc-a)"}}>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><Bike size={17} className="text-gray-700"/></div>
+            <div className="min-w-0">
+              <span className="font-bold text-gray-950 block">{online?"متصل":"غير متصل"}</span>
+              <span className="text-gray-400 text-xs truncate block">{profile.vehicle} • {profile.plate}</span>
+            </div>
+          </div>
+          <button onClick={()=>setOnline(v=>!v)} aria-label={online?"إيقاف الاتصال":"تفعيل الاتصال"} aria-pressed={online}
+            className={`relative w-12 h-6 rounded-full flex-shrink-0 transition-colors ${online?"bg-green-500":"bg-gray-200"}`}>
+            <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${online?"left-6":"left-0.5"}`}/>
+          </button>
+        </div>
+        {[{Icon:Wallet,l:"أرباحي الإجمالية",s:`${fmtNum(s.earnings)} ج.س`, go:"earnings"},
+          {Icon:Package,l:"إجمالي الرحلات",s:`${s.deliveries} رحلة`, go:"earnings"},
+          {Icon:Settings,l:"الإعدادات",s:"", go:"settings"}].map(({Icon:Ic,l,s:sub,go})=>(
+          <button key={l} onClick={()=>setView(go)} className="w-full bg-white border rounded-xl p-4 flex items-center gap-3" style={{borderColor:"var(--bc-a)"}}>
+            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><Ic size={17} className="text-gray-700"/></div>
+            <span className="font-bold text-gray-950 flex-1 min-w-0 truncate text-right">{l}</span>
+            {sub && <span className="text-gray-500 font-bold text-sm flex-shrink-0 whitespace-nowrap">{sub}</span>}
+            <ChevronRight size={15} className="text-gray-300 flex-shrink-0" style={{transform:"scaleX(-1)"}}/>
+          </button>
+        ))}
+        <button onClick={()=>setConfirmLogout(true)} className="w-full bg-red-50 border border-red-100 rounded-xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0"><LogOut size={17} className="text-red-500"/></div>
+          <span className="font-bold text-red-600 flex-1 min-w-0 truncate text-right">تسجيل الخروج</span>
+        </button>
+      </div>
+      <ConfirmModal
+        open={confirmLogout}
+        danger
+        loading={loggingOut}
+        loadingLabel="جارٍ تسجيل الخروج..."
+        title="تسجيل الخروج"
+        message="هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟"
+        confirmLabel="تسجيل الخروج"
+        onConfirm={doLogout}
+        onCancel={()=>setConfirmLogout(false)}
+      />
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CONFIRM MODAL — نافذة تأكيد موحّدة لكل إجراءات الحذف/الخروج/الحفظ الحساسة
+// ══════════════════════════════════════════════════════════════════════════════
+function ConfirmModal({ open, title, message, confirmLabel, cancelLabel, danger, loading, loadingLabel, onConfirm, onCancel }) {
+  useScrollLock(open);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4 sm:items-center sm:pb-0" style={{background:"rgba(10,10,10,0.55)"}}>
+      <div className="w-full bg-white rounded-3xl p-6" style={{maxWidth:420}} onClick={e=>e.stopPropagation()}>
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${danger?"bg-red-50":"bg-gray-100"}`}>
+          <AlertCircle size={22} className={danger?"text-red-500":"text-gray-700"}/>
+        </div>
+        <h3 className="font-black text-lg text-gray-950 mb-1.5">{title}</h3>
+        <p className="text-gray-500 text-sm mb-6 leading-relaxed">{message}</p>
+        <div className="flex gap-3">
+          <button onClick={onCancel} disabled={loading} className="flex-1 py-3.5 rounded-xl font-bold text-gray-700 bg-gray-100 active:scale-95 transition-transform disabled:opacity-40">{cancelLabel || "إلغاء"}</button>
+          <button onClick={onConfirm} disabled={loading} className={`flex-1 py-3.5 rounded-xl font-black text-white active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-70 ${danger?"bg-red-500":"bg-gray-950"}`}>
+            {loading && <Spinner/>}
+            {loading ? (loadingLabel || "جارٍ التنفيذ...") : (confirmLabel || "تأكيد")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ROLE SWITCHER — تبديل حقيقي بين حساب عميل وحساب سائق مسجَّلين بنفس رقم الهاتف
+// ══════════════════════════════════════════════════════════════════════════════
+function RoleSwitcher({ current, onSwitch }) {
+  const roles = [
+    { r:"customer", Icon:User, label:"عميل" },
+    { r:"driver",   Icon:Bike, label:"سائق" },
+  ];
+  return (
+    <div className="bg-white border rounded-2xl p-5" style={{borderColor:"var(--bc-a)"}}>
+      <h3 className="font-black text-gray-950 mb-1">تبديل الحساب</h3>
+      <p className="text-xs text-gray-400 mb-4">إن كان لديك حساب آخر بنفس رقم الهاتف سننتقل إليه مباشرة، وإلا سنوجّهك لإنشاء واحد</p>
+      <div className="flex bg-gray-50 rounded-2xl p-1.5 gap-1">
+        {roles.map(({ r, Icon, label }) => (
+          <button key={r} onClick={()=>onSwitch(r)}
+            className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-black transition-all active:scale-95 ${current===r ? "bg-gray-950 text-white shadow" : "text-gray-500"}`}>
+            <Icon size={18} strokeWidth={current===r?2.5:1.5}/>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SETTINGS SCREEN — صفحة إعدادات مستقلة (صورة شخصية، اسم، هاتف، تفضيلات)
+// ══════════════════════════════════════════════════════════════════════════════
+// ── تغيير كلمة المرور — نافذة حقيقية تتحقق من كلمة المرور الحالية فعلياً ──────
+function ChangePasswordModal({ open, onClose, accountId }) {
+  const { showToast } = useApp();
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  useScrollLock(open);
+  if (!open) return null;
+
+  const reset = () => { setCurrent(""); setNext(""); setConfirm(""); setErrors({}); };
+  const close = () => { if (loading) return; reset(); onClose(); };
+
+  const submit = async () => {
+    const errs = {};
+    if (!current) errs.current = "أدخل كلمة المرور الحالية";
+    if (!next) errs.next = "أدخل كلمة مرور جديدة";
+    else if (next.length < 6) errs.next = "6 أحرف على الأقل";
+    if (confirm !== next) errs.confirm = "كلمتا المرور غير متطابقتين";
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
+    setLoading(true);
+    try {
+      await authApi.changePassword(accountId, current, next);
+      showToast("تم تغيير كلمة المرور بنجاح");
+      reset();
+      onClose();
+    } catch (e) {
+      setErrors({ current: e.message || "تعذّر تغيير كلمة المرور" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4 sm:items-center sm:pb-0" style={{background:"rgba(10,10,10,0.55)"}} onClick={close}>
+      <div className="w-full bg-white rounded-3xl p-6" style={{maxWidth:420}} onClick={e=>e.stopPropagation()}>
+        <h3 className="font-black text-lg text-gray-950 mb-4">تغيير كلمة المرور</h3>
+        <div className="space-y-3">
+          <div>
+            <input type="password" value={current} onChange={e=>setCurrent(e.target.value)} placeholder="كلمة المرور الحالية" dir="ltr" aria-label="كلمة المرور الحالية"
+              className="w-full border-2 rounded-xl px-4 py-3 text-gray-900 focus:outline-none transition-colors" style={{borderColor: errors.current ? "#EF4444" : "var(--bc-b)"}}/>
+            {errors.current && <p className="moter-field-error"><AlertCircle size={13}/> {errors.current}</p>}
+          </div>
+          <div>
+            <input type="password" value={next} onChange={e=>setNext(e.target.value)} placeholder="كلمة المرور الجديدة" dir="ltr" aria-label="كلمة المرور الجديدة"
+              className="w-full border-2 rounded-xl px-4 py-3 text-gray-900 focus:outline-none transition-colors" style={{borderColor: errors.next ? "#EF4444" : "var(--bc-b)"}}/>
+            {errors.next && <p className="moter-field-error"><AlertCircle size={13}/> {errors.next}</p>}
+          </div>
+          <div>
+            <input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="تأكيد كلمة المرور الجديدة" dir="ltr" aria-label="تأكيد كلمة المرور الجديدة"
+              className="w-full border-2 rounded-xl px-4 py-3 text-gray-900 focus:outline-none transition-colors" style={{borderColor: errors.confirm ? "#EF4444" : "var(--bc-b)"}}/>
+            {errors.confirm && <p className="moter-field-error"><AlertCircle size={13}/> {errors.confirm}</p>}
+          </div>
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={close} disabled={loading} className="flex-1 py-3.5 rounded-xl font-bold text-gray-700 bg-gray-100 active:scale-95 transition-transform disabled:opacity-40">إلغاء</button>
+          <button onClick={submit} disabled={loading} className="flex-1 py-3.5 rounded-xl font-black text-white bg-gray-950 flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-70">
+            {loading && <Spinner/>} {loading ? "جارٍ التغيير..." : "تغيير"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, currentRole, onSwitchRole, onAccountDeleted }) {
+  const { darkMode, setDarkMode, t, showToast } = useApp();
+  const [photo, setPhoto] = useState(profile.photo);
+  const [fullName, setFullName] = useState(profile.name);
+  const [phoneNum, setPhoneNum] = useState(profile.phone);
+  const [notificationsOn, setNotificationsOn] = useState(profile.notificationsEnabled !== false);
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [changePassOpen, setChangePassOpen] = useState(false);
+  const inputId = "settingsPhotoInput_" + roleLabel;
+
+  const dirty = fullName.trim() !== profile.name || phoneNum.trim() !== profile.phone
+    || photo !== profile.photo || notificationsOn !== (profile.notificationsEnabled !== false);
+
+  const handlePhoto = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setPhoto(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const validate = () => {
+    const errs = {};
+    const nameTrim = fullName.trim();
+    if (!nameTrim) errs.name = t("err_name_required");
+    else if (nameTrim.length < 2) errs.name = t("err_name_short");
+    const phoneTrim = phoneNum.trim().replace(/[\s-]/g, "");
+    if (!phoneTrim) errs.phone = t("err_phone_required");
+    else if (!/^\+?\d{8,14}$/.test(phoneTrim)) errs.phone = t("err_phone_invalid");
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSave = async () => {
+    setSaveError("");
+    if (!validate()) return;
+    setSaving(true);
+    try {
+      await setProfile({ name: fullName.trim(), phone: phoneNum.trim(), photo, notificationsEnabled: notificationsOn });
+      showToast(t("saved_success"));
+    } catch (e) {
+      setSaveError(e.message || "تعذّر حفظ التغييرات، حاول مرة أخرى");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await authApi.deleteAccount(profile.id);
+      onAccountDeleted();
+    } catch (e) {
+      showToast(e.message || "تعذّر حذف الحساب", "error");
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50" dir="rtl">
+      <div className="bg-gray-950 text-white p-5 pt-14">
+        <button onClick={()=>setView(backTo)} className="flex items-center gap-2 text-gray-400 text-sm mb-4">
+          <ArrowLeft size={16} style={{transform:"scaleX(-1)"}}/> {t("back")}
+        </button>
+        <h2 className="text-xl font-black">{t("settings_title")}</h2>
+        <p className="text-gray-400 text-sm mt-1">{roleLabel} • إدارة حسابك الشخصي</p>
+      </div>
+
+      <div className="p-5 space-y-4 pb-12 max-w-full">
+        {/* الصورة الشخصية */}
+        <div className="bg-white border rounded-2xl p-5 flex flex-col items-center" style={{borderColor:"var(--bc-a)"}}>
+          <div className="relative">
+            {photo ? (
+              <img src={photo} alt="الصورة الشخصية" className="w-24 h-24 rounded-3xl object-cover"/>
+            ) : (
+              <div className="w-24 h-24 bg-gray-950 text-white rounded-3xl flex items-center justify-center text-3xl font-black">{fullName[0] || "?"}</div>
+            )}
+            <label htmlFor={inputId} className="absolute -bottom-1 -left-1 w-8 h-8 bg-white border-2 rounded-full flex items-center justify-center cursor-pointer active:scale-90 transition-transform" style={{borderColor:"var(--bc-a)"}}>
+              <Settings size={14} className="text-gray-700"/>
+            </label>
+            <input id={inputId} type="file" accept="image/*" onChange={handlePhoto} className="hidden" aria-label="تغيير الصورة الشخصية"/>
+          </div>
+          <p className="text-xs text-gray-400 mt-3 text-center">اضغط على الأيقونة لتغيير الصورة الشخصية</p>
+          {photo && (
+            <button onClick={()=>setPhoto(null)} className="text-xs text-red-500 font-bold mt-1">إزالة الصورة</button>
+          )}
+        </div>
+
+        {/* المعلومات الشخصية */}
+        <div className="bg-white border rounded-2xl p-5" style={{borderColor:"var(--bc-a)"}}>
+          <h3 className="font-black text-gray-950 mb-4">{t("personal_info")}</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-semibold text-gray-700 block mb-2">{t("full_name")}</label>
+              <input value={fullName} onChange={e=>setFullName(e.target.value)} aria-invalid={!!errors.name} aria-label={t("full_name")}
+                className="w-full border-2 rounded-xl px-4 py-3 text-gray-950 font-bold focus:outline-none focus:border-gray-950 transition-colors" style={{borderColor: errors.name ? "#EF4444" : "var(--bc-b)"}}/>
+              {errors.name && <p className="moter-field-error"><AlertCircle size={13}/> {errors.name}</p>}
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-700 block mb-2">{t("phone_number")}</label>
+              <input value={phoneNum} onChange={e=>setPhoneNum(e.target.value)} dir="ltr" type="tel" aria-invalid={!!errors.phone} aria-label={t("phone_number")}
+                className="w-full border-2 rounded-xl px-4 py-3 text-gray-950 font-bold focus:outline-none focus:border-gray-950 transition-colors" style={{borderColor: errors.phone ? "#EF4444" : "var(--bc-b)"}}/>
+              {errors.phone && <p className="moter-field-error"><AlertCircle size={13}/> {errors.phone}</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* التفضيلات */}
+        <div className="bg-white border rounded-2xl p-5 space-y-4" style={{borderColor:"var(--bc-a)"}}>
+          <h3 className="font-black text-gray-950 mb-1">{t("preferences")}</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><Bell size={17} className="text-gray-700"/></div>
+              <span className="font-bold text-gray-950 text-sm">{t("notifications_label")}</span>
+            </div>
+            <button onClick={()=>setNotificationsOn(!notificationsOn)} aria-label={t("notifications_label")} aria-pressed={notificationsOn} className={`relative w-12 h-6 rounded-full flex-shrink-0 transition-colors ${notificationsOn?"bg-green-500":"bg-gray-200"}`}>
+              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${notificationsOn?"left-6":"left-0.5"}`}/>
+            </button>
+          </div>
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">{darkMode ? <Sun size={17} className="text-gray-700"/> : <Moon size={17} className="text-gray-700"/>}</div>
+              <span className="font-bold text-gray-950 text-sm">{t("dark_mode_label")}</span>
+            </div>
+            <button onClick={()=>setDarkMode(v=>!v)} aria-label={t("dark_mode_label")} aria-pressed={darkMode} className={`relative w-12 h-6 rounded-full flex-shrink-0 transition-colors ${darkMode?"bg-green-500":"bg-gray-200"}`}>
+              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${darkMode?"left-6":"left-0.5"}`}/>
+            </button>
+          </div>
+        </div>
+
+        {/* تبديل الحساب */}
+        <RoleSwitcher current={currentRole} onSwitch={onSwitchRole}/>
+
+        {/* إجراءات الحساب */}
+        <div className="bg-white border rounded-2xl overflow-hidden" style={{borderColor:"var(--bc-a)"}}>
+          <button onClick={()=>setChangePassOpen(true)} className="w-full p-4 flex items-center gap-3 border-b active:bg-gray-50" style={{borderColor:"var(--bc-c)"}}>
+            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><Shield size={17} className="text-gray-700"/></div>
+            <span className="font-bold text-gray-950 flex-1 min-w-0 truncate text-right text-sm">تغيير كلمة المرور</span>
+            <ChevronRight size={15} className="text-gray-300 flex-shrink-0" style={{transform:"scaleX(-1)"}}/>
+          </button>
+          <button onClick={()=>setConfirmDelete(true)} className="w-full p-4 flex items-center gap-3 active:bg-red-50">
+            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0"><AlertCircle size={17} className="text-red-500"/></div>
+            <span className="font-bold text-red-600 flex-1 min-w-0 truncate text-right text-sm">حذف الحساب</span>
+          </button>
+        </div>
+
+        {saveError && <p className="moter-field-error justify-center bg-red-50 rounded-xl px-3 py-2.5"><AlertCircle size={13}/> {saveError}</p>}
+        <button onClick={handleSave} disabled={saving || !dirty}
+          className="w-full bg-gray-950 text-white py-4 rounded-xl font-black text-base active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-40">
+          {saving && <Spinner/>}
+          {saving ? t("saving") : t("save_changes")}
+        </button>
+      </div>
+
+      <ChangePasswordModal open={changePassOpen} onClose={()=>setChangePassOpen(false)} accountId={profile.id}/>
+      <ConfirmModal
+        open={confirmDelete}
+        danger
+        loading={deleting}
+        loadingLabel="جارٍ حذف الحساب..."
+        title="حذف الحساب نهائياً"
+        message="هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بياناتك وطلباتك بشكل دائم. هل تريد المتابعة؟"
+        confirmLabel="حذف الحساب"
+        onConfirm={confirmDeleteAccount}
+        onCancel={()=>setConfirmDelete(false)}
+      />
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ROOT APP
+// ══════════════════════════════════════════════════════════════════════════════
+const NAV_DEFAULT = { screen:"welcome", role:null, customerView:"home", driverView:"dashboard" };
+
+function loadNav() {
+  try {
+    const raw = sessionStorage.getItem(SS_NAV);
+    if (raw) return { ...NAV_DEFAULT, ...JSON.parse(raw) };
+  } catch (e) {}
+  return NAV_DEFAULT;
+}
+
+// يحدّد شاشة الدخول الأولى بالاعتماد على الجلسة الحقيقية المحفوظة (وليس فقط
+// على حالة التنقّل المؤقتة في sessionStorage) — فدخولك يبقى محفوظاً فعلياً
+// حتى بعد إغلاق المتصفح تماماً، إلى أن تسجّل الخروج بنفسك.
+function computeInitialNav() {
+  const restored = loadNav();
+  const session = authApi.getSession();
+  if (session) return { ...restored, screen:"app", role: session.role };
+  if (restored.screen === "app") return { ...NAV_DEFAULT };
+  return restored;
+}
+
+function AppShell() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [nav, setNavState] = useState(computeInitialNav);
+  const [sessionAccount, setSessionAccount] = useState(() => authApi.getSession());
+  const isPopping = React.useRef(false);
+  const didMount = React.useRef(false);
+
+  const [appSettings, setAppSettings] = useLocalStorageState(LS_SETTINGS, { darkMode:false });
+  const [notifications, setNotifications] = useLocalStorageState(LS_NOTIFICATIONS, []);
+  const [orders, setOrders] = useLocalStorageState(LS_ORDERS, []);
+  const [toasts, setToasts] = useState([]);
+
+  const t = (key) => DICT[key] || key;
+  const setDarkMode = (v) => setAppSettings(s => ({ ...s, darkMode: typeof v === "function" ? v(s.darkMode) : v }));
+  const markAllRead = () => setNotifications(ns => ns.map(n => ({ ...n, read:true })));
+
+  const showToast = (message, type = "success") => {
+    const id = Date.now() + Math.random();
+    setToasts(ts => [...ts, { id, message, type }]);
+    setTimeout(() => setToasts(ts => ts.filter(x => x.id !== id)), 2600);
+  };
+  const pushNotification = (title, body) => {
+    setNotifications(ns => [{ id:"n"+Date.now()+Math.random(), read:false, time:"الآن", title, body }, ...ns]);
+  };
+  const addOrder = (orderData) => setOrders(os => [orderData, ...os]);
+  const updateOrder = (id, patch) => setOrders(os => os.map(o => o.id === id ? { ...o, ...(typeof patch === "function" ? patch(o) : patch) } : o));
+
+  // تحديث بيانات الحساب الحقيقي (يُستخدم من شاشة الإعدادات وتبديل حالة اتصال السائق)
+  const updateProfile = async (patch) => {
+    const updated = await authApi.updateAccount(sessionAccount.id, patch);
+    setSessionAccount(updated);
+    return updated;
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 1300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = "ar";
+    document.documentElement.dir = "rtl";
+  }, []);
+
+  // ── ربط زر الرجوع في المتصفح بحالة التنقل الداخلية للتطبيق ──
+  useEffect(() => {
+    window.history.replaceState(nav, "");
+    const handler = (e) => {
+      isPopping.current = true;
+      setNavState(e.state || NAV_DEFAULT);
+    };
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
+  }, []); // eslint-disable-line
+
+  useEffect(() => {
+    try { sessionStorage.setItem(SS_NAV, JSON.stringify(nav)); } catch (e) {}
+    if (!didMount.current) { didMount.current = true; return; }
+    if (isPopping.current) { isPopping.current = false; return; }
+    window.history.pushState(nav, "");
+  }, [nav]);
+
+  const patchNav = (patch) => setNavState(n => ({ ...n, ...patch }));
+  const select        = (r) => patchNav({ role:r, screen:"login" });
+  const backToWelcome = () => patchNav({ screen:"welcome" });
+  const setCustomerView = (v) => patchNav({ customerView:v });
+  const setDriverView   = (v) => patchNav({ driverView:v });
+
+  // نجاح تسجيل الدخول أو إنشاء الحساب — يأتي بالحساب الحقيقي من authApi
+  const handleAuthed = (account) => {
+    setSessionAccount(account);
+    patchNav({ role: account.role, screen: "app" });
+  };
+
+  // تسجيل خروج حقيقي وغير مفاجئ — الشاشة التي استدعته تُظهر حالة تحميل خاصة بها
+  // (عبر ConfirmModal) طوال مدة هذا الاستدعاء، ولا ننتقل إلا بعد اكتماله فعلياً
+  const logout = async () => {
+    await authApi.logout();
+    setSessionAccount(null);
+    patchNav({ ...NAV_DEFAULT });
+  };
+
+  // بعد حذف الحساب فعلياً (authApi.deleteAccount مسح الجلسة مسبقاً) — فقط نعيد الضبط محلياً
+  const onAccountDeleted = () => {
+    setSessionAccount(null);
+    patchNav({ ...NAV_DEFAULT });
+  };
+
+  // تبديل حقيقي بين حسابَي عميل/سائق بنفس رقم الهاتف — أو التوجيه لإنشاء واحد
+  const switchRole = (targetRole) => {
+    if (!sessionAccount || targetRole === sessionAccount.role) return;
+    const match = authApi.findByPhone(targetRole, sessionAccount.phone);
+    if (match) {
+      writeLS(LS_SESSION, { accountId: match.id });
+      setSessionAccount(match);
+      patchNav({ role: targetRole, screen:"app", customerView:"home", driverView:"dashboard" });
+    } else {
+      showToast("لا يوجد حساب " + (targetRole === "driver" ? "سائق" : "عميل") + " بنفس رقم هاتفك — أنشئ واحداً الآن", "error");
+      patchNav({ role: targetRole, screen:"login" });
+    }
+  };
+
+  const { screen, role } = nav;
+
+  const ctxValue = { darkMode: appSettings.darkMode, setDarkMode, t, notifications, markAllRead, orders, addOrder, updateOrder, showToast, pushNotification, account: sessionAccount, updateProfile };
+
+  let content = null;
+  if (screen === "welcome") content = <WelcomeScreen onSelect={select}/>;
+  else if (screen === "login") content = <LoginScreen role={role} onAuthed={handleAuthed} onBack={backToWelcome}/>;
+  else if (screen === "app" && role === "customer" && sessionAccount) content = <CustomerApp view={nav.customerView} setView={setCustomerView} onLogout={logout} onAccountDeleted={onAccountDeleted} currentRole={role} onSwitchRole={switchRole}/>;
+  else if (screen === "app" && role === "driver" && sessionAccount) content = <DriverApp view={nav.driverView} setView={setDriverView} onLogout={logout} onAccountDeleted={onAccountDeleted} currentRole={role} onSwitchRole={switchRole}/>;
+  else content = <WelcomeScreen onSelect={select}/>;
+
+  return (
+    <AppCtx.Provider value={ctxValue}>
+      <div data-theme={appSettings.darkMode ? "dark" : "light"} style={{ background:"var(--app-bg)", minHeight:"100vh" }}>
+        {showSplash && <SplashScreen/>}
+        {content}
+        <ToastHost toasts={toasts}/>
+      </div>
+    </AppCtx.Provider>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<AppShell />);
+</script>
+</body>
+</html>
