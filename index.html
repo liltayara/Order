@@ -499,8 +499,14 @@ function normalizePhone(phone) { return String(phone || "").trim().replace(/[\s-
 // كل (رقم هاتف + دور) هو حساب Firebase Auth مستقل تماماً (نفس تصميم التطبيق
 // الأصلي: يمكن لنفس الرقم أن يملك حساب عميل وحساب سائق منفصلين بكلمتَي مرور مختلفتين).
 // ══════════════════════════════════════════════════════════════════════════════
-function phoneToEmail(phone, role) {
-  return normalizePhone(phone).replace(/^\+/, "") + "." + role + "@order-org.app";
+// البريد الإلكتروني هو معرّف الدخول الحقيقي الآن. لكل (بريد + دور) حساب Firebase
+// Auth مستقل تماماً (يمكن لنفس الشخص أن يملك حساب عميل وحساب سائق بنفس بريده
+// وبكلمتَي مرور مختلفتين)، عبر بريد داخلي مُشتق يضمن هذا الفصل دون أي حاجة لتعدد
+// حسابات Google أو مزوّدي بريد فعليين. رقم الهاتف يبقى حقل تواصل عادي على
+// الحساب (يُستخدم لأزرار الاتصال بين السائق والعميل)، لا علاقة له بتسجيل الدخول.
+function emailToAuthEmail(email, role) {
+  const sanitized = String(email || "").trim().toLowerCase().replace(/@/g, "_at_").replace(/\./g, "_dot_");
+  return role + "-" + sanitized + "@order-org.app";
 }
 
 const usersCol  = fbDb.collection("users");
@@ -517,40 +523,45 @@ async function uploadAvatar(uid, file) {
 
 function authErrorMessage(e, role) {
   const code = e && e.code;
-  if (code === "auth/email-already-in-use") return "هذا الرقم مسجَّل بالفعل بحساب " + (role === "driver" ? "سائق" : "عميل") + "، جرّب تسجيل الدخول";
-  if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") return "رقم الهاتف أو كلمة المرور غير صحيحة";
+  if (code === "auth/email-already-in-use") return "هذا البريد مسجَّل بالفعل بحساب " + (role === "driver" ? "سائق" : "عميل") + "، جرّب تسجيل الدخول";
+  if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") return "البريد الإلكتروني أو كلمة المرور غير صحيحة";
   if (code === "auth/too-many-requests") return "محاولات دخول كثيرة ومتتالية، حاول لاحقاً";
   if (code === "auth/network-request-failed") return "تعذّر الاتصال بالخادم، تحقّق من اتصالك بالإنترنت";
   if (code === "auth/weak-password") return "كلمة المرور ضعيفة جداً";
   return (e && e.message) || "حدث خطأ غير متوقع، حاول مرة أخرى";
 }
 
+const FIRESTORE_SETUP_ERR = "تعذّر الوصول لقاعدة البيانات — تحقّق من إنشاء Firestore ونشر قواعده في Firebase Console، ومن اتصالك بالإنترنت";
+
 const fbApi = {
-  async register({ role, name, phone, password, photoFile, vehicle, plate }) {
-    const cleanPhone = normalizePhone(phone);
-    const email = phoneToEmail(cleanPhone, role);
+  async register({ role, name, email, phone, password, photoFile, vehicle, plate }) {
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    const authEmail = emailToAuthEmail(cleanEmail, role);
     let cred;
-    try { cred = await fbAuth.createUserWithEmailAndPassword(email, password); }
+    try { cred = await fbAuth.createUserWithEmailAndPassword(authEmail, password); }
     catch (e) { throw new Error(authErrorMessage(e, role)); }
     const uid = cred.user.uid;
     let photoURL = null;
     try { photoURL = await uploadAvatar(uid, photoFile); } catch (e) { /* الحساب يبقى صالحاً حتى لو تعذّر رفع الصورة الآن */ }
     const profile = {
-      uid, role, name: name.trim(), phone: cleanPhone, photoURL,
+      uid, role, name: name.trim(), email: cleanEmail, phone: normalizePhone(phone), photoURL,
       notificationsEnabled: true, createdAt: SERVER_TIME(),
       ...(role === "driver" ? { vehicle: (vehicle || "").trim(), plate: (plate || "").trim().toUpperCase(), online: false, location: null } : {}),
     };
-    await usersCol.doc(uid).set(profile);
+    try { await usersCol.doc(uid).set(profile); }
+    catch (e) { throw new Error(FIRESTORE_SETUP_ERR); }
     return { ...profile, id: uid, createdAt: new Date().toISOString() };
   },
 
-  async login({ role, phone, password }) {
-    const email = phoneToEmail(phone, role);
+  async login({ role, email, password }) {
+    const authEmail = emailToAuthEmail(email, role);
     let cred;
-    try { cred = await fbAuth.signInWithEmailAndPassword(email, password); }
+    try { cred = await fbAuth.signInWithEmailAndPassword(authEmail, password); }
     catch (e) { throw new Error(authErrorMessage(e, role)); }
-    const snap = await usersCol.doc(cred.user.uid).get();
-    if (!snap.exists) { await fbAuth.signOut(); throw new Error("لا يوجد حساب " + (role === "driver" ? "سائق" : "عميل") + " بهذا الرقم"); }
+    let snap;
+    try { snap = await usersCol.doc(cred.user.uid).get(); }
+    catch (e) { throw new Error(FIRESTORE_SETUP_ERR); }
+    if (!snap.exists) { await fbAuth.signOut(); throw new Error("لا يوجد حساب " + (role === "driver" ? "سائق" : "عميل") + " بهذا البريد"); }
     return { ...snap.data(), id: cred.user.uid };
   },
 
@@ -562,15 +573,32 @@ const fbApi = {
       const file = clean.photoFile; delete clean.photoFile;
       if (file) clean.photoURL = await uploadAvatar(uid, file);
     }
+    if ("email" in clean && clean.email) {
+      const newEmail = String(clean.email).trim().toLowerCase();
+      clean.email = newEmail;
+      const user = fbAuth.currentUser;
+      if (user) {
+        const snap = await usersCol.doc(uid).get();
+        const role = snap.exists ? snap.data().role : null;
+        if (role) {
+          try { await user.updateEmail(emailToAuthEmail(newEmail, role)); }
+          catch (e) {
+            if (e.code === "auth/requires-recent-login") throw new Error("لأسباب أمنية، سجّل الخروج ثم أعد الدخول قبل تغيير البريد الإلكتروني");
+            if (e.code === "auth/email-already-in-use") throw new Error("هذا البريد مستخدم بالفعل");
+            throw e;
+          }
+        }
+      }
+    }
     await usersCol.doc(uid).set(clean, { merge: true });
     const snap = await usersCol.doc(uid).get();
     return { ...snap.data(), id: uid };
   },
 
-  async changePassword(uid, role, phone, currentPassword, newPassword) {
+  async changePassword(uid, role, email, currentPassword, newPassword) {
     const user = fbAuth.currentUser;
     if (!user) throw new Error("انتهت الجلسة، سجّل الدخول من جديد");
-    const cred = firebase.auth.EmailAuthProvider.credential(phoneToEmail(phone, role), currentPassword);
+    const cred = firebase.auth.EmailAuthProvider.credential(emailToAuthEmail(email, role), currentPassword);
     try { await user.reauthenticateWithCredential(cred); }
     catch (e) { throw new Error("كلمة المرور الحالية غير صحيحة"); }
     await user.updatePassword(newPassword);
@@ -587,8 +615,8 @@ const fbApi = {
     }
   },
 
-  async findByPhone(role, phone) {
-    const snap = await usersCol.where("role", "==", role).where("phone", "==", normalizePhone(phone)).limit(1).get();
+  async findByEmail(role, email) {
+    const snap = await usersCol.where("role", "==", role).where("email", "==", String(email||"").trim().toLowerCase()).limit(1).get();
     if (snap.empty) return null;
     return { ...snap.docs[0].data(), id: snap.docs[0].id };
   },
@@ -698,8 +726,11 @@ const DICT = {
   err_name_short: "الاسم يجب أن يكون حرفين على الأقل",
   err_phone_required: "الرجاء إدخال رقم الهاتف",
   err_phone_invalid: "رقم الهاتف غير صحيح",
+  err_email_required: "الرجاء إدخال البريد الإلكتروني",
+  err_email_invalid: "البريد الإلكتروني غير صحيح",
   signup_title: "إنشاء حساب",
-  phone_label: "رقم الهاتف",
+  phone_label: "رقم الهاتف (للتواصل)",
+  email_label: "البريد الإلكتروني",
   confirm_password_label: "تأكيد كلمة المرور",
   photo_label: "صورتك الشخصية",
   photo_hint: "اضغط لإضافة صورتك",
@@ -1119,14 +1150,14 @@ function WelcomeScreen({ onSelect }) {
 }
 
 // ── Login Screen ──────────────────────────────────────────────────────────────
-function LoginScreen({ role, onAuthed, onBack, prefillPhone }) {
+function LoginScreen({ role, onAuthed, onBack, prefillEmail }) {
   const { t } = useApp();
   const [mode, setMode] = useState("login"); // "login" | "signup"
   const meta = { customer:{label:t("role_customer_title"),Icon:User}, driver:{label:t("role_driver_title"),Icon:Bike} };
   const { label, Icon } = meta[role];
 
-  // ── حقول تسجيل الدخول (رقم الهاتف + كلمة السر) ──
-  const [loginPhone, setLoginPhone] = useState(prefillPhone || "");
+  // ── حقول تسجيل الدخول (البريد الإلكتروني + كلمة السر) ──
+  const [loginEmail, setLoginEmail] = useState(prefillEmail || "");
   const [loginPass, setLoginPass] = useState("");
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [loginErrors, setLoginErrors] = useState({});
@@ -1135,9 +1166,9 @@ function LoginScreen({ role, onAuthed, onBack, prefillPhone }) {
 
   const validateLogin = () => {
     const errs = {};
-    const phoneTrim = loginPhone.trim().replace(/[\s-]/g, "");
-    if (!phoneTrim) errs.phone = t("err_phone_required");
-    else if (!/^\+?\d{8,14}$/.test(phoneTrim)) errs.phone = t("err_phone_invalid");
+    const emailTrim = loginEmail.trim();
+    if (!emailTrim) errs.email = t("err_email_required");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) errs.email = t("err_email_invalid");
     if (!loginPass) errs.pass = t("err_pass_required");
     else if (loginPass.length < 6) errs.pass = t("err_pass_short");
     setLoginErrors(errs);
@@ -1149,7 +1180,7 @@ function LoginScreen({ role, onAuthed, onBack, prefillPhone }) {
     if (!validateLogin()) return;
     setLoginLoading(true);
     try {
-      const account = await fbApi.login({ role, phone: loginPhone, password: loginPass });
+      const account = await fbApi.login({ role, email: loginEmail, password: loginPass });
       onAuthed(account);
     } catch (e) {
       setLoginFormError(e.message || "تعذّر تسجيل الدخول، حاول مرة أخرى");
@@ -1158,9 +1189,10 @@ function LoginScreen({ role, onAuthed, onBack, prefillPhone }) {
     }
   };
 
-  // ── حقول إنشاء الحساب (الاسم + رقم الهاتف + كلمة السر + تأكيدها + صورة + بيانات المركبة للسائق) ──
+  // ── حقول إنشاء الحساب (الاسم + البريد + رقم الهاتف للتواصل + كلمة السر + تأكيدها + صورة + بيانات المركبة للسائق) ──
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState(prefillPhone || "");
+  const [email, setEmail] = useState(prefillEmail || "");
+  const [phone, setPhone] = useState("");
   const [pass, setPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -1188,6 +1220,9 @@ function LoginScreen({ role, onAuthed, onBack, prefillPhone }) {
     const nameTrim = fullName.trim();
     if (!nameTrim) errs.name = t("err_name_required");
     else if (nameTrim.length < 2) errs.name = t("err_name_short");
+    const emailTrim = email.trim();
+    if (!emailTrim) errs.email = t("err_email_required");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) errs.email = t("err_email_invalid");
     const phoneTrim = phone.trim().replace(/[\s-]/g, "");
     if (!phoneTrim) errs.phone = t("err_phone_required");
     else if (!/^\+?\d{8,14}$/.test(phoneTrim)) errs.phone = t("err_phone_invalid");
@@ -1209,7 +1244,7 @@ function LoginScreen({ role, onAuthed, onBack, prefillPhone }) {
     if (!validateSignup()) return;
     setSignupLoading(true);
     try {
-      const account = await fbApi.register({ role, name: fullName, phone, password: pass, photoFile, vehicle, plate });
+      const account = await fbApi.register({ role, name: fullName, email, phone, password: pass, photoFile, vehicle, plate });
       onAuthed(account);
     } catch (e) {
       setSignupFormError(e.message || "تعذّر إنشاء الحساب، حاول مرة أخرى");
@@ -1234,12 +1269,12 @@ function LoginScreen({ role, onAuthed, onBack, prefillPhone }) {
       {mode === "login" ? (
         <div className="flex-1 p-6 flex flex-col gap-4 mt-2">
           <div>
-            <label className="text-sm font-semibold text-gray-700 block mb-2">{t("phone_label")}</label>
-            <input type="tel" value={loginPhone} onChange={e=>setLoginPhone(e.target.value)} placeholder="05xxxxxxxx"
-              aria-invalid={!!loginErrors.phone} aria-label={t("phone_label")}
+            <label className="text-sm font-semibold text-gray-700 block mb-2">{t("email_label")}</label>
+            <input type="email" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} placeholder="name@example.com"
+              aria-invalid={!!loginErrors.email} aria-label={t("email_label")}
               className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors" dir="ltr"
-              style={{borderColor: loginErrors.phone ? "#EF4444" : (loginPhone?"var(--ink)":"var(--bc-b)")}}/>
-            {loginErrors.phone && <p className="moter-field-error"><AlertCircle size={13}/> {loginErrors.phone}</p>}
+              style={{borderColor: loginErrors.email ? "#EF4444" : (loginEmail?"var(--ink)":"var(--bc-b)")}}/>
+            {loginErrors.email && <p className="moter-field-error"><AlertCircle size={13}/> {loginErrors.email}</p>}
           </div>
           <div>
             <label className="text-sm font-semibold text-gray-700 block mb-2">{t("password_label")}</label>
@@ -1292,6 +1327,15 @@ function LoginScreen({ role, onAuthed, onBack, prefillPhone }) {
               className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors"
               style={{borderColor: signupErrors.name ? "#EF4444" : (fullName?"var(--ink)":"var(--bc-b)")}}/>
             {signupErrors.name && <p className="moter-field-error"><AlertCircle size={13}/> {signupErrors.name}</p>}
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">{t("email_label")}</label>
+            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com"
+              aria-invalid={!!signupErrors.email} aria-label={t("email_label")}
+              className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors" dir="ltr"
+              style={{borderColor: signupErrors.email ? "#EF4444" : (email?"var(--ink)":"var(--bc-b)")}}/>
+            {signupErrors.email && <p className="moter-field-error"><AlertCircle size={13}/> {signupErrors.email}</p>}
           </div>
 
           <div>
@@ -2977,7 +3021,7 @@ function ChangePasswordModal({ open, onClose, profile }) {
     if (Object.keys(errs).length) return;
     setLoading(true);
     try {
-      await fbApi.changePassword(profile.id, profile.role, profile.phone, current, next);
+      await fbApi.changePassword(profile.id, profile.role, profile.email, current, next);
       showToast("تم تغيير كلمة المرور بنجاح");
       reset();
       onClose();
@@ -3025,6 +3069,7 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(profile.photoURL);
   const [fullName, setFullName] = useState(profile.name);
+  const [emailField, setEmailField] = useState(profile.email || "");
   const [phoneNum, setPhoneNum] = useState(profile.phone);
   const [notificationsOn, setNotificationsOn] = useState(profile.notificationsEnabled !== false);
   const [errors, setErrors] = useState({});
@@ -3035,7 +3080,7 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
   const [changePassOpen, setChangePassOpen] = useState(false);
   const inputId = "settingsPhotoInput_" + roleLabel;
 
-  const dirty = fullName.trim() !== profile.name || phoneNum.trim() !== profile.phone
+  const dirty = fullName.trim() !== profile.name || emailField.trim() !== (profile.email||"") || phoneNum.trim() !== profile.phone
     || !!photoFile || notificationsOn !== (profile.notificationsEnabled !== false);
 
   const handlePhoto = (e) => {
@@ -3052,6 +3097,9 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
     const nameTrim = fullName.trim();
     if (!nameTrim) errs.name = t("err_name_required");
     else if (nameTrim.length < 2) errs.name = t("err_name_short");
+    const emailTrim = emailField.trim();
+    if (!emailTrim) errs.email = t("err_email_required");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) errs.email = t("err_email_invalid");
     const phoneTrim = phoneNum.trim().replace(/[\s-]/g, "");
     if (!phoneTrim) errs.phone = t("err_phone_required");
     else if (!/^\+?\d{8,14}$/.test(phoneTrim)) errs.phone = t("err_phone_invalid");
@@ -3064,7 +3112,7 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
     if (!validate()) return;
     setSaving(true);
     try {
-      const patch = { name: fullName.trim(), phone: phoneNum.trim(), notificationsEnabled: notificationsOn };
+      const patch = { name: fullName.trim(), email: emailField.trim().toLowerCase(), phone: phoneNum.trim(), notificationsEnabled: notificationsOn };
       if (photoFile) patch.photoFile = photoFile;
       await setProfile(patch);
       setPhotoFile(null);
@@ -3123,6 +3171,12 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
               <input value={fullName} onChange={e=>setFullName(e.target.value)} aria-invalid={!!errors.name} aria-label={t("full_name")}
                 className="w-full border-2 rounded-xl px-4 py-3 text-gray-950 font-bold focus:outline-none focus:border-gray-950 transition-colors" style={{borderColor: errors.name ? "#EF4444" : "var(--bc-b)"}}/>
               {errors.name && <p className="moter-field-error"><AlertCircle size={13}/> {errors.name}</p>}
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-700 block mb-2">{t("email_label")}</label>
+              <input value={emailField} onChange={e=>setEmailField(e.target.value)} dir="ltr" type="email" aria-invalid={!!errors.email} aria-label={t("email_label")}
+                className="w-full border-2 rounded-xl px-4 py-3 text-gray-950 font-bold focus:outline-none focus:border-gray-950 transition-colors" style={{borderColor: errors.email ? "#EF4444" : "var(--bc-b)"}}/>
+              {errors.email && <p className="moter-field-error"><AlertCircle size={13}/> {errors.email}</p>}
             </div>
             <div>
               <label className="text-sm font-semibold text-gray-700 block mb-2">{t("phone_number")}</label>
@@ -3214,7 +3268,7 @@ function AppShell() {
   const [authReady, setAuthReady] = useState(false);
   const [nav, setNavState] = useState(loadNav);
   const [sessionAccount, setSessionAccount] = useState(null);
-  const [pendingPhone, setPendingPhone] = useState(null);
+  const [pendingEmail, setPendingEmail] = useState(null);
   const isPopping = React.useRef(false);
   const didMount = React.useRef(false);
 
@@ -3271,10 +3325,12 @@ function AppShell() {
           const acc = { ...snap.data(), id: user.uid };
           setSessionAccount(acc);
           setNavState(n => n.screen === "app" ? n : { ...n, screen:"app", role: acc.role });
-        } else {
-          setSessionAccount(null);
-          setNavState({ ...NAV_DEFAULT });
         }
+        // لو المستند غير موجود، لا نُسقط الجلسة فوراً: فور التسجيل مباشرة قد تصل
+        // هذه اللحظة قبل اكتمال كتابة المستند فعلياً (سباق عابر)، فتسجيلنا خروج
+        // المستخدم هنا كان يُرجعه بلا سبب واضح لشاشة الترحيب مباشرة بعد نجاح
+        // الدخول. الحساب الفعلي الذي أعادته fbApi.login/register يبقى كما هو،
+        // وهذا الاشتراك يحدّثه حين يصل المستند فعلاً.
         setAuthReady(true);
       }, () => setAuthReady(true));
     });
@@ -3342,7 +3398,7 @@ function AppShell() {
   // نجاح تسجيل الدخول أو إنشاء الحساب — يأتي بالحساب الحقيقي من fbApi
   const handleAuthed = (account) => {
     setSessionAccount(account);
-    setPendingPhone(null);
+    setPendingEmail(null);
     patchNav({ role: account.role, screen: "app" });
   };
 
@@ -3359,16 +3415,16 @@ function AppShell() {
     patchNav({ ...NAV_DEFAULT });
   };
 
-  // التبديل بين حسابَي عميل/سائق بنفس رقم الهاتف — كل دور حساب Firebase Auth
-  // مستقل بكلمة مرور خاصة به، فنتحقق أولاً هل يوجد حساب أصلاً، ثم نأخذك لشاشة
-  // الدخول مع تعبئة رقم هاتفك تلقائياً (يبقى فقط إدخال كلمة مرور ذلك الحساب)
+  // التبديل بين حسابَي عميل/سائق بنفس البريد الإلكتروني — كل دور حساب Firebase
+  // Auth مستقل بكلمة مرور خاصة به، فنتحقق أولاً هل يوجد حساب أصلاً، ثم نأخذك
+  // لشاشة الدخول مع تعبئة بريدك تلقائياً (يبقى فقط إدخال كلمة مرور ذلك الحساب)
   const switchRole = async (targetRole) => {
     if (!sessionAccount || targetRole === sessionAccount.role) return;
-    setPendingPhone(sessionAccount.phone);
+    setPendingEmail(sessionAccount.email);
     try {
-      const match = await fbApi.findByPhone(targetRole, sessionAccount.phone);
+      const match = await fbApi.findByEmail(targetRole, sessionAccount.email);
       if (match) showToast("أدخل كلمة مرور حساب " + (targetRole === "driver" ? "السائق" : "العميل") + " للمتابعة");
-      else showToast("لا يوجد حساب " + (targetRole === "driver" ? "سائق" : "عميل") + " بنفس رقم هاتفك — أنشئ واحداً الآن", "error");
+      else showToast("لا يوجد حساب " + (targetRole === "driver" ? "سائق" : "عميل") + " بنفس بريدك — أنشئ واحداً الآن", "error");
       patchNav({ role: targetRole, screen: "login" });
     } catch (e) {
       showToast("تعذّر التحقق من الحساب الآخر الآن", "error");
@@ -3382,7 +3438,7 @@ function AppShell() {
   let content = null;
   if (authReady) {
     if (screen === "welcome") content = <WelcomeScreen onSelect={select}/>;
-    else if (screen === "login") content = <LoginScreen role={role} onAuthed={handleAuthed} onBack={backToWelcome} prefillPhone={pendingPhone}/>;
+    else if (screen === "login") content = <LoginScreen role={role} onAuthed={handleAuthed} onBack={backToWelcome} prefillEmail={pendingEmail}/>;
     else if (screen === "app" && role === "customer" && sessionAccount) content = <CustomerApp view={nav.customerView} setView={setCustomerView} onLogout={logout} onAccountDeleted={onAccountDeleted} currentRole={role} onSwitchRole={switchRole}/>;
     else if (screen === "app" && role === "driver" && sessionAccount) content = <DriverApp view={nav.driverView} setView={setDriverView} onLogout={logout} onAccountDeleted={onAccountDeleted} currentRole={role} onSwitchRole={switchRole}/>;
     else content = <WelcomeScreen onSelect={select}/>;
