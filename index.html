@@ -647,10 +647,20 @@ const ordersCol = fbDb.collection("orders");
 const notifsCol = fbDb.collection("notifications");
 const SERVER_TIME = () => firebase.firestore.FieldValue.serverTimestamp();
 
+// سباق مع مهلة زمنية — أي وعد لا يستقر خلال ms يُرفض بدلاً من أن يُعلَّق للأبد
+// (خاصة رفع الصور: لو Storage غير مفعَّل أو حافلته غير موجودة في المشروع، بعض
+// المتصفحات تُعلّق الطلب بلا استجابة نظيفة بدل رفضه فوراً بخطأ واضح)
+function withTimeout(promise, ms, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+  ]);
+}
+
 async function uploadAvatar(uid, file) {
   if (!file) return null;
   const ref = fbStorage.ref().child("avatars/" + uid);
-  await ref.put(file);
+  await withTimeout(ref.put(file), 20000, "رفع الصورة استغرق وقتاً طويلاً");
   return ref.getDownloadURL();
 }
 
@@ -768,9 +778,15 @@ const fbApi = {
 
   // حفظ البيانات الإجبارية بعد أول دخول (الاسم + الهاتف + الصورة، وبيانات
   // المركبة للسائق) — تُنهي هذه الخطوة profileComplete فيدخل المستخدم التطبيق.
+  // فشل رفع الصورة تحديداً (مهلة/Storage) لا يوقف حفظ بقية البيانات أبداً؛
+  // نُعلم الواجهة بذلك عبر photoUploadFailed لتنبيه المستخدم بلطف بدل تعليقه.
   async completeProfile(uid, { name, phone, photoFile, vehicle, plate }) {
     let photoURL = null;
-    try { photoURL = await uploadAvatar(uid, photoFile); } catch (e) { /* لا حرج، تبقى الصورة الحالية إن وُجدت */ }
+    let photoUploadFailed = false;
+    if (photoFile) {
+      try { photoURL = await uploadAvatar(uid, photoFile); }
+      catch (e) { photoUploadFailed = true; }
+    }
     const patch = {
       name: String(name || "").trim(), phone, profileComplete: true,
       ...(photoURL ? { photoURL } : {}),
@@ -780,7 +796,7 @@ const fbApi = {
     try { await usersCol.doc(uid).set(patch, { merge: true }); }
     catch (e) { throw new Error(FIRESTORE_SETUP_ERR); }
     const snap = await usersCol.doc(uid).get();
-    return { ...snap.data(), id: uid };
+    return { ...snap.data(), id: uid, photoUploadFailed };
   },
 
   async logout() { await fbAuth.signOut(); },
@@ -1500,7 +1516,7 @@ function LoginScreen({ role, onAuthed, onBack, prefillUsername }) {
 // Google لا يمنحنا رقم هاتف أبداً، واسم المستخدم لا يمنحنا اسماً أو صورة — فهذه
 // الخطوة هي ما يكمل بيانات الحساب الحقيقية قبل السماح بدخول التطبيق فعلياً.
 function CompleteProfileScreen({ account, onDone, onLogout }) {
-  const { t } = useApp();
+  const { t, showToast } = useApp();
   const [fullName, setFullName] = useState(account.name || "");
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(account.photoURL || null);
@@ -1549,6 +1565,7 @@ function CompleteProfileScreen({ account, onDone, onLogout }) {
         name: fullName, phone: toSudanE164(localPhone), photoFile,
         ...(account.role === "driver" ? { vehicle, plate } : {}),
       });
+      if (updated.photoUploadFailed) showToast("تم حفظ بياناتك، لكن تعذّر رفع الصورة — أضِفها لاحقاً من الإعدادات", "error");
       onDone(updated);
     } catch (e) {
       setFormError(e.message || "تعذّر حفظ بياناتك، حاول مرة أخرى");
