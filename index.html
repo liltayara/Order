@@ -131,11 +131,16 @@
   [data-theme="dark"] .placeholder-gray-300::placeholder { color:#54545A !important; }
 
   /* ── سبلاش الشاشة الأولية ── */
-  @keyframes moterFadeOut { 0%,70%{opacity:1} 100%{opacity:0} }
   @keyframes moterPop { 0%{transform:scale(.7);opacity:0} 60%{transform:scale(1.06);opacity:1} 100%{transform:scale(1)} }
+  @keyframes moterBreathe { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.045); } }
+  /* الشاشة تبقى ظاهرة بالكامل طالما التطبيق غير جاهز فعلياً، وتُخفى فقط عبر
+     transition فور الجاهزية — لا وميض شاشة فارغة "معلَّقة" بعد أن يخفت التصميم
+     الزمني القديم بينما التحقق من الجلسة ما زال جارياً. */
   .moter-splash { position:fixed; inset:0; z-index:100; background:#0A0A0A; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; animation:moterFadeOut 1.3s ease forwards; }
+    align-items:center; justify-content:center; opacity:1; transition:opacity .38s ease; }
+  .moter-splash-exit { opacity:0; pointer-events:none; }
   .moter-splash-icon { animation:moterPop .6s ease; }
+  .moter-splash-icon-idle { animation:moterPop .6s ease, moterBreathe 1.7s ease-in-out .6s infinite; }
 
   /* ── مؤشر تحميل دوّار ── */
   @keyframes moterSpin { to { transform:rotate(360deg); } }
@@ -161,12 +166,32 @@
   .moter-map-wrap .leaflet-container { font-family:'Cairo',sans-serif; direction:ltr; }
   .moter-map-wrap .leaflet-control-zoom { margin:8px !important; }
   .moter-map-wrap .leaflet-control-zoom a { width:28px !important; height:28px !important; line-height:28px !important; font-size:14px !important; border-radius:8px !important; border:none !important; box-shadow:0 2px 8px rgba(0,0,0,.18) !important; }
-  .moter-map-badge { position:absolute; top:8px; right:8px; z-index:400; background:rgba(10,10,10,.82); color:#fff; font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; backdrop-filter:blur(6px); pointer-events:none; }
-  .moter-driver-pin { width:38px; height:38px; background:#0A0A0A; border:3px solid #fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:17px; box-shadow:0 4px 14px rgba(0,0,0,.45); }
-  .moter-pickup-pin { width:12px; height:12px; background:#0A0A0A; border:2.5px solid #fff; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,.35); }
-  .moter-dropoff-pin { width:28px; height:36px; position:relative; }
-  .moter-dropoff-pin::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:24px; height:24px; background:#0A0A0A; border:3px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,.4); }
-  .moter-dropoff-pin::after { content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-top:14px solid #0A0A0A; }
+  .moter-map-badge { position:absolute; top:8px; right:8px; z-index:400; background:rgba(10,10,10,.82); color:#fff; font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; backdrop-filter:blur(6px); pointer-events:none; display:flex; align-items:center; gap:6px; }
+
+  /* دبّوس السائق — متحرّك دوماً، مع سهم اتجاه ناعم الدوران حين تتوفر بيانة heading حقيقية من GPS */
+  .moter-driver-pin { width:40px; height:40px; background:#0A0A0A; border:3px solid #fff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 16px rgba(0,0,0,.5); }
+  .moter-heading-arrow { transition: transform .5s cubic-bezier(.4,0,.2,1); transform-origin:center; }
+
+  /* دبّوس ثانوي مكتوم — للنقطة غير النشطة حالياً (استُلمت بالفعل، أو لم يحن دورها بعد) */
+  .moter-pin-muted { width:13px; height:13px; background:#fff; border:2.5px solid #9A9AA2; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+
+  /* دبّوس العميل — ثابت دوماً وأحمر دائماً، هو الوجهة الحالية التي يتجه إليها السائق */
+  .moter-pin-active { width:28px; height:38px; position:relative; }
+  .moter-pin-active::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:24px; height:24px; background:#DC2626; border:3px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(220,38,38,.5); }
+  .moter-pin-active::after { content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-top:14px solid #DC2626; }
+
+  /* دبّوس مثبَّت بمنتصف شاشة اختيار الموقع — الخريطة تتحرك تحته، لا هو */
+  .moter-picker-pin { position:absolute; top:50%; left:50%; transform:translate(-50%,-100%); z-index:500; pointer-events:none; filter:drop-shadow(0 8px 14px rgba(0,0,0,.45)); }
+  @keyframes moterPinHover { 0%,100%{ transform:translate(-50%,-100%); } 50%{ transform:translate(-50%,calc(-100% - 5px)); } }
+  .moter-picker-pin-idle { animation: moterPinHover 1.6s ease-in-out infinite; }
+
+  /* اهتزاز الحقل عند فشل التحقق — إشارة واضحة لكن غير مزعجة */
+  @keyframes moterShake { 10%,90%{transform:translateX(-1px);} 20%,80%{transform:translateX(2px);} 30%,50%,70%{transform:translateX(-4px);} 40%,60%{transform:translateX(4px);} }
+  .moter-shake { animation: moterShake .4s cubic-bezier(.36,.07,.19,.97) both; }
+
+  /* شريط قوة كلمة المرور */
+  .moter-strength-track { height:4px; border-radius:3px; background:var(--bc-b); overflow:hidden; }
+  .moter-strength-fill { height:100%; border-radius:3px; transition: width .3s var(--ease-premium, ease), background-color .3s; }
 
   /* ── هياكل تحميل (Skeleton) ── */
   @keyframes moterShimmer { 0%{ background-position:-200% 0; } 100%{ background-position:200% 0; } }
@@ -250,7 +275,8 @@
   .hero-surface > * { position:relative; }
 
   @media (prefers-reduced-motion: reduce){
-    .view-transition, .role-stagger button, .moter-splash h1, .moter-splash-icon, .moter-tl-pulse { animation:none !important; }
+    .view-transition, .role-stagger button, .moter-splash h1, .moter-splash-icon, .moter-tl-pulse,
+    .moter-shake, .moter-picker-pin-idle { animation:none !important; }
   }
 </style>
 </head>
@@ -317,6 +343,9 @@ const Landmark = makeIcon(<><path d="M3 21h18"/><path d="M4 21V10M9 21V10M15 21V
 const ArrowDownCircle = makeIcon(<><circle cx="12" cy="12" r="9"/><path d="M12 7v8M8.5 12l3.5 3.5L15.5 12"/></>);
 const Camera = makeIcon(<><path d="M4 8h3l1.5-2.5h7L17 8h3a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 8z"/><circle cx="12" cy="14" r="3.6"/></>);
 const UserCheck = makeIcon(<><circle cx="9" cy="8" r="4"/><path d="M2.5 21c0-4 3-6.5 6.5-6.5 1 0 2 .2 2.8.6"/><path d="M15.5 15.5l2 2 4-4"/></>);
+const Crosshair = makeIcon(<><circle cx="12" cy="12" r="7.5"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></>);
+const Inbox = makeIcon(<><path d="M3 12.5h4.5l1.7 2.8h5.6l1.7-2.8H21"/><path d="M5.2 5.5h13.6L21 12.2v6a1.6 1.6 0 0 1-1.6 1.6H4.6A1.6 1.6 0 0 1 3 18.2v-6z"/></>);
+const MessageCircle = makeIcon(<path d="M12 3C6.9 3 3 6.4 3 10.8c0 2.5 1.3 4.7 3.4 6.2-.1 1.1-.5 2.2-1.4 3.3 1.6-.1 3-.6 4.2-1.5.9.2 1.8.3 2.8.3 5.1 0 9-3.4 9-7.8S17.1 3 12 3z"/>);
 
 // شعار التطبيق (أيقونة مخصّصة موحّدة — سبلاش، شاشة الترحيب، وأيقونة المتصفح)
 function AppMark({ size = 36, className = "" }) {
@@ -467,25 +496,13 @@ const NEIGHBORHOODS = [
 
 const PRICING = { km: 12, min: 20 }; // سعر الكيلومتر والحد الأدنى للطلب
 
-const DELIVERY_TYPES = [
-  { id:"parcel",     emoji:"📦", label:"طرد",   desc:"حتى 5 كغ",     multiplier:1.00 },
-  { id:"food",       emoji:"🍕", label:"طعام",  desc:"من المطعم",     multiplier:1.15 },
-  { id:"pharmacy",   emoji:"💊", label:"أدوية", desc:"صيدليات",      multiplier:1.05 },
-  { id:"documents",  emoji:"📄", label:"وثائق", desc:"مستندات مهمة", multiplier:0.90 },
-  { id:"groceries",  emoji:"🛒", label:"بقالة", desc:"من السوق",      multiplier:1.20 },
-];
-
+// الدفع عند الاستلام هو الطريقة الوحيدة المتاحة حالياً — لا خيارات بنكية بعد الآن
 const PAYMENT_METHODS = [
-  { id:"cash",     label:"الدفع عند الاستلام", desc:"نقداً لليد عند التسليم",              Icon:Wallet     },
-  { id:"bankak",   label:"بنكك (Bankak)",      desc:"تحويل فوري عبر تطبيق بنك الخرطوم",   Icon:CreditCard },
-  { id:"transfer", label:"تحويل بنكي",         desc:"حوالة مباشرة لحساب Order",             Icon:Landmark   },
+  { id:"cash", label:"الدفع عند الاستلام", desc:"نقداً لليد عند التسليم", Icon:Wallet },
 ];
 
-const PROMO_CODES = [
-  { code:"ORDER10",   type:"percent", value:10, label:"خصم 10% لأول طلب",  active:true  },
-  { code:"FIX15",     type:"fixed",   value:15, label:"خصم 15 ج.س",        active:true  },
-  { code:"RAMADAN20", type:"percent", value:20, label:"عرض رمضان",         active:false },
-];
+// مركز الخريطة الافتراضي (الخرطوم) — يُستخدم فقط قبل ورود أول إحداثية GPS حقيقية
+const DEFAULT_CENTER = { lat: 15.5007, lng: 32.5599 };
 
 // ── حالة عرض موحّدة لكل شارات الطلبات/السائقين ────────────────────────────────
 const ST = {
@@ -527,22 +544,31 @@ function getPricingSettings() {
   return PRICING;
 }
 
-function calcDeliveryPrice(distanceKm, deliveryTypeId) {
+function calcDeliveryPrice(distanceKm) {
   const pricing = getPricingSettings();
-  const type = DELIVERY_TYPES.find(t => t.id === deliveryTypeId) || DELIVERY_TYPES[0];
-  const raw = distanceKm * pricing.km * (type.multiplier || 1);
+  const raw = distanceKm * pricing.km;
   return Math.max(Math.round(raw), pricing.min);
 }
 
-function applyPromoCode(amount, codeInput) {
-  const clean = (codeInput || "").trim().toUpperCase();
-  if (!clean) return { finalAmount: amount, discount: 0, error: null, label: null };
-  const promo = PROMO_CODES.find(p => p.code === clean);
-  if (!promo) return { finalAmount: amount, discount: 0, error: "كود الخصم غير صحيح", label: null };
-  if (!promo.active) return { finalAmount: amount, discount: 0, error: "هذا الكود منتهي الصلاحية", label: null };
-  const discount = promo.type === "percent" ? Math.round(amount * promo.value / 100) : promo.value;
-  const finalAmount = Math.max(amount - discount, 0);
-  return { finalAmount, discount, error: null, label: promo.label };
+// ── مقياس قوة كلمة المرور — نقاط 0-4 حسب الطول وتنوع الأحرف ───────────────────
+function getPasswordStrength(pw) {
+  const value = String(pw || "");
+  if (!value) return { score: 0, label: "", pct: 0 };
+  let score = 0;
+  if (value.length >= 6) score++;
+  if (value.length >= 10) score++;
+  if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++;
+  if (/[0-9]/.test(value)) score++;
+  if (/[^a-zA-Z0-9]/.test(value)) score++;
+  const levels = [
+    { label:"ضعيفة جداً", color:"#EF4444" },
+    { label:"ضعيفة",      color:"#F97316" },
+    { label:"متوسطة",     color:"#F59E0B" },
+    { label:"قوية",       color:"#22C55E" },
+    { label:"قوية جداً",  color:"#16A34A" },
+  ];
+  const idx = Math.min(score, levels.length - 1);
+  return { score: idx, label: levels[idx].label, color: levels[idx].color, pct: ((idx+1)/levels.length)*100 };
 }
 
 // إحصاءات السائق من طلباته المرئية له فقط (تسليماته + أرباحه). التقييم لا يُحسب
@@ -692,7 +718,7 @@ function blankProfile({ uid, role, authMethod, authEmail, extra }) {
     username: null, googleUid: null, email: null,
     name: "", phone: "", photoURL: null, profileComplete: false,
     notificationsEnabled: true, createdAt: SERVER_TIME(),
-    ...(role === "driver" ? { vehicle: "", plate: "", online: false, location: null } : {}),
+    ...(role === "driver" ? { online: false, location: null } : {}),
     ...extra,
   };
 }
@@ -913,8 +939,9 @@ function computeOrderProgress(order, driverLoc) {
   if (order.status === "delivered") return { progress: 1, remainingKm: 0, etaMin: 0, hasLiveLocation: false };
   if (order.status !== "in_transit") return { progress: 0, remainingKm: null, etaMin: null, hasLiveLocation: false };
 
-  const pickup = resolveNeighborhood(order.pickup);
-  const dropoff = resolveNeighborhood(order.dropoff);
+  const pickup = order.pickupLoc;
+  const dropoff = order.dropoffLoc;
+  if (!pickup || !dropoff) return { progress: 0, remainingKm: null, etaMin: null, hasLiveLocation: !!driverLoc };
 
   if (order.phase === "to_dropoff") {
     const legKm = Math.max(haversineKm(pickup, dropoff), 0.3);
@@ -979,7 +1006,7 @@ const DICT = {
   settings_title: "الإعدادات", personal_info: "المعلومات الشخصية", full_name: "الاسم الكامل",
   phone_number: "رقم الهاتف", preferences: "التفضيلات", notifications_label: "الإشعارات",
   dark_mode_label: "الوضع الليلي", save_changes: "حفظ التغييرات",
-  saved_success: "✓ تم الحفظ بنجاح", saving: "جارٍ الحفظ...",
+  saved_success: "تم الحفظ بنجاح", saving: "جارٍ الحفظ...",
   notifications_title: "الإشعارات", mark_all_read: "تحديد الكل كمقروء",
   no_notifications_title: "لا توجد إشعارات", no_notifications_sub: "ستظهر تنبيهاتك هنا أولاً بأول",
 };
@@ -994,10 +1021,12 @@ function Spinner({ dark }) {
 }
 
 // ── حالة فارغة موحّدة ─────────────────────────────────────────────────────────
-function EmptyState({ emoji = "📭", title, subtitle, action }) {
+function EmptyState({ Icon = Inbox, title, subtitle, action }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-14 px-6">
-      <div className="text-5xl mb-4">{emoji}</div>
+      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+        <Icon size={26} className="text-gray-400" strokeWidth={1.6}/>
+      </div>
       <p className="font-black text-gray-950 text-base mb-1">{title}</p>
       {subtitle && <p className="text-gray-400 text-sm max-w-[240px]">{subtitle}</p>}
       {action}
@@ -1057,63 +1086,56 @@ function MiniBarChart({ labels, values, highlightIndex = -1 }) {
 
 // ── مخطط دائري بسيط (توزيع حالات الطلبات) ─────────────────────────────────────
 // ── لوحة الإشعارات (قابلة للاستدعاء من أي مكان) ────────────────────────────────
-function NotificationsModal({ open, onClose }) {
+// ── صفحة الإشعارات — مستقلة بالكامل، تُفتح بالتنقل إليها لا كنافذة منبثقة ──────
+function NotificationsScreen({ setView, backTo = "home" }) {
   const { notifications, markAllRead, t } = useApp();
-  useScrollLock(open);
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4 sm:items-center sm:pb-0" style={{background:"rgba(10,10,10,0.55)"}} onClick={onClose}>
-      <div className="w-full bg-white rounded-3xl overflow-hidden" style={{maxWidth:420, maxHeight:"75vh"}} onClick={e=>e.stopPropagation()}>
-        <div className="p-5 border-b flex items-center justify-between" style={{borderColor:"var(--bc-a)"}}>
-          <h3 className="font-black text-gray-950">{t("notifications_title")}</h3>
-          <button onClick={onClose} aria-label={t("back")} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-            <X size={14} className="text-gray-600"/>
-          </button>
-        </div>
-        <div className="overflow-auto" style={{maxHeight:"55vh"}}>
-          {notifications.length === 0 ? (
-            <EmptyState emoji="🔔" title={t("no_notifications_title")} subtitle={t("no_notifications_sub")}/>
-          ) : notifications.map(n => (
-            <div key={n.id} className="p-4 border-b flex items-start gap-3" style={{borderColor:"var(--bc-c)"}}>
-              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${n.read?"bg-transparent":"bg-blue-500"}`}/>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-gray-950 text-sm">{n.title}</p>
-                <p className="text-gray-500 text-sm mt-0.5">{n.body}</p>
-                <p className="text-gray-300 text-xs mt-1">{n.time}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        {notifications.length > 0 && (
-          <button onClick={markAllRead} className="w-full p-4 text-center font-bold text-sm text-gray-700 active:bg-gray-50">
-            {t("mark_all_read")}
-          </button>
-        )}
+    <div className="min-h-screen bg-white flex flex-col" dir="rtl">
+      <div className="bg-gray-950 text-white p-6 pt-14 flex items-center gap-3">
+        <button onClick={()=>setView(backTo)} aria-label={t("back")} className="w-9 h-9 bg-gray-800 rounded-full flex items-center justify-center flex-shrink-0">
+          <ArrowLeft size={16} style={{transform:"scaleX(-1)"}}/>
+        </button>
+        <h2 className="text-xl font-black">{t("notifications_title")}</h2>
       </div>
+      <div className="flex-1 overflow-auto">
+        {notifications.length === 0 ? (
+          <EmptyState Icon={Bell} title={t("no_notifications_title")} subtitle={t("no_notifications_sub")}/>
+        ) : notifications.map(n => (
+          <div key={n.id} className="p-4 border-b flex items-start gap-3" style={{borderColor:"var(--bc-c)"}}>
+            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${n.read?"bg-transparent":"bg-blue-500"}`}/>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-950 text-sm">{n.title}</p>
+              <p className="text-gray-500 text-sm mt-0.5">{n.body}</p>
+              <p className="text-gray-300 text-xs mt-1">{n.time}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      {notifications.length > 0 && (
+        <button onClick={markAllRead} className="w-full p-4 text-center font-bold text-sm text-gray-700 active:bg-gray-50 border-t" style={{borderColor:"var(--bc-c)"}}>
+          {t("mark_all_read")}
+        </button>
+      )}
     </div>
   );
 }
 
-// ── جرس الإشعارات (زر + لوحة) ─────────────────────────────────────────────────
-function NotificationBell({ variant = "dark" }) {
+// ── جرس الإشعارات — زر تنقّل بسيط فقط، الصفحة نفسها مستقلة تماماً ──────────────
+function NotificationBell({ variant = "dark", onOpen }) {
   const { notifications, t } = useApp();
-  const [open, setOpen] = useState(false);
   const unread = notifications.filter(n => !n.read).length;
   const btnCls = variant === "dark" ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-700";
   return (
-    <>
-      <div className="relative">
-        <button onClick={()=>setOpen(true)} aria-label={t("notifications_title")} className={`w-10 h-10 rounded-xl flex items-center justify-center ${btnCls}`}>
-          <Bell size={18}/>
-        </button>
-        {unread > 0 && (
-          <span className="absolute -top-1 -left-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold" aria-hidden="true">
-            {unread}
-          </span>
-        )}
-      </div>
-      <NotificationsModal open={open} onClose={()=>setOpen(false)}/>
-    </>
+    <div className="relative">
+      <button onClick={onOpen} aria-label={t("notifications_title")} className={`w-10 h-10 rounded-xl flex items-center justify-center ${btnCls}`}>
+        <Bell size={18}/>
+      </button>
+      {unread > 0 && (
+        <span className="absolute -top-1 -left-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold" aria-hidden="true">
+          {unread}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -1133,10 +1155,10 @@ function ToastHost({ toasts }) {
 }
 
 // ── سبلاش الشاشة الأولية ──────────────────────────────────────────────────────
-function SplashScreen() {
+function SplashScreen({ exiting }) {
   return (
-    <div className="moter-splash">
-      <div className="moter-splash-icon w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-4">
+    <div className={`moter-splash ${exiting ? "moter-splash-exit" : ""}`}>
+      <div className={`w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-4 ${exiting ? "moter-splash-icon" : "moter-splash-icon-idle"}`}>
         <AppMark size={38} className="text-gray-950"/>
       </div>
       <h1 className="text-white text-2xl font-black tracking-tight">Order</h1>
@@ -1235,97 +1257,102 @@ function DeliveryTimeline({ order, role = "customer", eta, variant = "full" }) {
   );
 }
 
-// ── اختيار نوع التوصيل ────────────────────────────────────────────────────────
-function DeliveryTypePicker({ value, onChange, error }) {
-  return (
-    <div>
-      <div className="grid grid-cols-3 gap-2">
-        {DELIVERY_TYPES.map(dt => (
-          <button key={dt.id} type="button" onClick={()=>onChange(dt.id)}
-            className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1 transition-all ${value===dt.id ? "bg-gray-950 border-gray-950 text-white" : "bg-white text-gray-700"}`}
-            style={value!==dt.id ? {borderColor:"var(--bc-b)"} : {}}>
-            <span className="text-xl">{dt.emoji}</span>
-            <span className="text-xs font-black">{dt.label}</span>
-          </button>
-        ))}
-      </div>
-      {error && <p className="moter-field-error"><AlertCircle size={13}/> {error}</p>}
-    </div>
-  );
-}
+// ── شاشة اختيار الموقع على الخريطة — تحل محل الكتابة اليدوية، وتصبح إجبارية
+//    قبل تمكين طلب سائق. دبّوس ثابت في منتصف الشاشة والخريطة هي التي تتحرك تحته،
+//    مع زر لاستخدام الموقع الحالي عبر GPS الجهاز وعكس ترميز جغرافي حي لاسم المكان. ──
+function LocationPickerScreen({ title, initial, centerHint, onConfirm, onCancel }) {
+  const { showToast } = useApp();
+  useScrollLock(true);
+  const mapRef = React.useRef(null);
+  const mapInstance = React.useRef(null);
+  const [center, setCenter] = useState(initial || centerHint || DEFAULT_CENTER);
+  const [label, setLabel] = useState("");
+  const [labelLoading, setLabelLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const geocodeTimer = React.useRef(null);
 
-// ── اختيار طريقة الدفع ────────────────────────────────────────────────────────
-function PaymentMethodPicker({ value, onChange, error }) {
-  return (
-    <div className="space-y-2">
-      {PAYMENT_METHODS.map(pm => {
-        const Ic = pm.Icon;
-        const active = value === pm.id;
-        return (
-          <button key={pm.id} type="button" onClick={()=>onChange(pm.id)}
-            className={`w-full p-4 rounded-2xl border-2 flex items-center gap-3 text-right transition-all ${active ? "border-gray-950 bg-gray-50" : "bg-white"}`}
-            style={!active ? {borderColor:"var(--bc-b)"} : {}}>
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${active?"bg-gray-950 text-white":"bg-gray-100 text-gray-600"}`}>
-              <Ic size={17}/>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-950 text-sm">{pm.label}</p>
-              <p className="text-gray-400 text-xs truncate">{pm.desc}</p>
-            </div>
-            <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${active?"border-gray-950 bg-gray-950":"border-gray-300"}`}>
-              {active && <Check size={11} className="text-white"/>}
-            </div>
-          </button>
-        );
-      })}
-      {error && <p className="moter-field-error"><AlertCircle size={13}/> {error}</p>}
-    </div>
-  );
-}
-
-// ── إدخال كود الخصم مع تحقق حي ────────────────────────────────────────────────
-function PromoInput({ orderAmount, onApplied }) {
-  const [code, setCode] = useState("");
-  const [result, setResult] = useState(null);
-  const [checking, setChecking] = useState(false);
-
-  const apply = () => {
-    if (!code.trim()) return;
-    setChecking(true);
-    setTimeout(() => {
-      const r = applyPromoCode(orderAmount, code);
-      setResult(r);
-      setChecking(false);
-      onApplied(r.error ? null : { code: code.trim().toUpperCase(), ...r });
-    }, 500);
+  const locateMe = (mapArg) => {
+    if (!navigator.geolocation) { showToast("جهازك لا يدعم تحديد الموقع", "error"); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const map = mapArg || mapInstance.current;
+        if (map) map.setView([c.lat, c.lng], 16, { animate:true });
+        setCenter(c);
+        setLocating(false);
+      },
+      () => { setLocating(false); showToast("تعذّر تحديد موقعك — تأكد من تفعيل صلاحية الموقع للمتصفح", "error"); },
+      { enableHighAccuracy:true, timeout:10000 }
+    );
   };
 
-  const clear = () => { setCode(""); setResult(null); onApplied(null); };
+  useEffect(() => {
+    if (!mapInstance.current && mapRef.current && window.L) {
+      const L = window.L;
+      const start = initial || centerHint || DEFAULT_CENTER;
+      const map = L.map(mapRef.current, { zoomControl:false }).setView([start.lat, start.lng], initial ? 16 : 13);
+      L.control.zoom({ position:"bottomleft" }).addTo(map);
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom:19, attribution:"Esri" }).addTo(map);
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom:19, opacity:0.92 }).addTo(map);
+      map.on("movestart", () => setMoving(true));
+      map.on("moveend", () => { setMoving(false); const c = map.getCenter(); setCenter({ lat:c.lat, lng:c.lng }); });
+      mapInstance.current = map;
+      if (!initial) locateMe(map);
+    }
+    return () => { if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; } };
+  }, []);
+
+  // عكس الترميز الجغرافي لإظهار اسم مقروء للنقطة — Nominatim (OpenStreetMap)، مجاني بلا مفتاح API
+  useEffect(() => {
+    if (moving) return;
+    clearTimeout(geocodeTimer.current);
+    setLabelLoading(true);
+    geocodeTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${center.lat}&lon=${center.lng}&zoom=16&accept-language=ar`);
+        const data = await res.json();
+        setLabel(data && data.display_name ? data.display_name : `${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`);
+      } catch {
+        setLabel(`${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`);
+      } finally {
+        setLabelLoading(false);
+      }
+    }, 700);
+    return () => clearTimeout(geocodeTimer.current);
+  }, [center.lat, center.lng, moving]);
 
   return (
-    <div className="bg-white border rounded-2xl p-4" style={{borderColor:"var(--bc-a)"}}>
-      <div className="flex items-center gap-2 mb-2">
-        <Tag size={15} className="text-gray-400"/>
-        <p className="font-bold text-gray-950 text-sm">كود الخصم</p>
+    <div className="fixed inset-0 z-50 bg-white flex flex-col" dir="rtl">
+      <div className="bg-gray-950 text-white p-5 pt-14 flex items-center gap-3 flex-shrink-0">
+        <button onClick={onCancel} aria-label="إلغاء" className="w-9 h-9 bg-gray-800 rounded-full flex items-center justify-center flex-shrink-0">
+          <X size={16}/>
+        </button>
+        <h2 className="text-lg font-black truncate">{title}</h2>
       </div>
-      {result && !result.error ? (
-        <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl p-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <CheckCircle size={15} className="text-green-600 flex-shrink-0"/>
-            <span className="text-green-800 text-sm font-bold truncate">{result.label} • خصم {fmtNum(result.discount)} ج.س</span>
-          </div>
-          <button onClick={clear} aria-label="إزالة الكود" className="flex-shrink-0"><X size={15} className="text-green-700"/></button>
+
+      <div className="flex-1 relative">
+        <div ref={mapRef} className="absolute inset-0"/>
+        <div className={`moter-picker-pin ${moving ? "" : "moter-picker-pin-idle"}`}><div className="moter-pin-active"/></div>
+        <button onClick={()=>locateMe()} disabled={locating} type="button"
+          className="absolute bottom-5 left-4 w-12 h-12 bg-white rounded-full flex items-center justify-center active:scale-90 transition-transform"
+          style={{boxShadow:"0 6px 20px rgba(0,0,0,.28)"}} aria-label="استخدم موقعي الحالي">
+          {locating ? <Spinner dark/> : <Crosshair size={20} className="text-gray-800"/>}
+        </button>
+      </div>
+
+      <div className="p-5 border-t flex-shrink-0" style={{borderColor:"var(--bc-a)"}}>
+        <div className="flex items-start gap-2 mb-4" style={{minHeight:40}}>
+          <MapPin size={16} className="text-red-600 flex-shrink-0 mt-0.5"/>
+          {labelLoading ? <SkeletonLine w="85%" h={16}/> : <p className="text-sm font-bold text-gray-800 leading-relaxed">{label}</p>}
         </div>
-      ) : (
-        <div className="flex gap-2">
-          <input value={code} onChange={e=>setCode(e.target.value)} placeholder="أدخل الكود هنا" dir="ltr"
-            className="flex-1 border-2 rounded-xl px-4 py-2.5 text-sm text-gray-950 font-bold focus:outline-none focus:border-gray-950 transition-colors uppercase" style={{borderColor:"var(--bc-b)"}}/>
-          <button onClick={apply} disabled={checking || !code.trim()} className="bg-gray-950 text-white px-5 rounded-xl font-bold text-sm flex items-center gap-1.5 flex-shrink-0">
-            {checking && <Spinner/>} تطبيق
-          </button>
-        </div>
-      )}
-      {result && result.error && <p className="moter-field-error"><AlertCircle size={13}/> {result.error}</p>}
+        <button onClick={()=>onConfirm({ lat:center.lat, lng:center.lng, label: label || `${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}` })}
+          disabled={labelLoading}
+          className="w-full bg-gray-950 text-white py-4 rounded-xl font-black text-base active:scale-95 transition-transform disabled:opacity-50">
+          تأكيد الموقع
+        </button>
+      </div>
     </div>
   );
 }
@@ -1379,7 +1406,7 @@ function SudanPhoneField({ value, onChange, error, label }) {
       {label && <label className="text-sm font-semibold text-gray-700 block mb-2">{label}</label>}
       <div className="flex gap-2" dir="ltr">
         <div className="border-2 rounded-xl px-3.5 flex items-center gap-1.5 flex-shrink-0 font-bold text-gray-500" style={{borderColor:"var(--bc-b)"}}>
-          <span>🇸🇩</span><span>+249</span>
+          <span>+249</span>
         </div>
         <input type="tel" inputMode="numeric" value={value} onChange={e=>onChange(e.target.value.replace(/\D/g,"").slice(0,9))}
           placeholder="9XXXXXXXX" aria-invalid={!!error} aria-label={label || "رقم الهاتف"}
@@ -1387,6 +1414,18 @@ function SudanPhoneField({ value, onChange, error, label }) {
           style={{borderColor: error ? "#EF4444" : (value?"var(--ink)":"var(--bc-b)")}}/>
       </div>
       {error && <p className="moter-field-error"><AlertCircle size={13}/> {error}</p>}
+    </div>
+  );
+}
+
+// ── مؤشر قوة كلمة المرور — شريط ملوّن + تسمية، يظهر فقط بعد بدء الكتابة ────────
+function PasswordStrengthMeter({ password }) {
+  if (!password) return null;
+  const s = getPasswordStrength(password);
+  return (
+    <div className="mt-2">
+      <div className="moter-strength-track"><div className="moter-strength-fill" style={{width:`${s.pct}%`, background:s.color}}/></div>
+      <p className="text-xs font-bold mt-1" style={{color:s.color}}>قوة كلمة المرور: {s.label}</p>
     </div>
   );
 }
@@ -1407,6 +1446,7 @@ function LoginScreen({ role, onAuthed, onBack, prefillUsername }) {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
   const busy = loading || googleLoading;
 
   const validate = () => {
@@ -1418,6 +1458,7 @@ function LoginScreen({ role, onAuthed, onBack, prefillUsername }) {
     if (!password) errs.password = t("err_pass_required");
     else if (password.length < 6) errs.password = t("err_pass_short");
     setErrors(errs);
+    if (Object.keys(errs).length) setShakeKey(k => k + 1);
     return Object.keys(errs).length === 0;
   };
 
@@ -1430,6 +1471,7 @@ function LoginScreen({ role, onAuthed, onBack, prefillUsername }) {
       onAuthed(account);
     } catch (e) {
       setFormError(e.message || "تعذّر تسجيل الدخول، حاول مرة أخرى");
+      setShakeKey(k => k + 1);
     } finally {
       setLoading(false);
     }
@@ -1475,27 +1517,33 @@ function LoginScreen({ role, onAuthed, onBack, prefillUsername }) {
           <div className="flex-1 h-px" style={{background:"var(--bc-b)"}}/>
         </div>
 
-        <div>
+        <div key={errors.username ? `u-${shakeKey}` : "u"} className={errors.username ? "moter-shake" : ""}>
           <label className="text-sm font-semibold text-gray-700 block mb-2">{t("username_label")}</label>
-          <input type="text" value={username} onChange={e=>setUsername(e.target.value)} placeholder="مثال: ahmed_2026" dir="ltr"
+          <input type="text" value={username} onChange={e=>setUsername(e.target.value)} dir="ltr"
             aria-invalid={!!errors.username} aria-label={t("username_label")}
             className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors"
             style={{borderColor: errors.username ? "#EF4444" : (username?"var(--ink)":"var(--bc-b)")}}/>
-          {errors.username && <p className="moter-field-error"><AlertCircle size={13}/> {errors.username}</p>}
+          {errors.username
+            ? <p className="moter-field-error"><AlertCircle size={13}/> {errors.username}</p>
+            : <p className="text-gray-400 text-xs mt-1.5">أحرف إنجليزية وأرقام و . _ فقط — 3 أحرف على الأقل</p>}
         </div>
 
-        <div>
+        <div key={errors.password ? `p-${shakeKey}` : "p"} className={errors.password ? "moter-shake" : ""}>
           <label className="text-sm font-semibold text-gray-700 block mb-2">{t("password_label")}</label>
           <div className="relative">
-            <input type={showPassword?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"
+            <input type={showPassword?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)}
               aria-invalid={!!errors.password} aria-label={t("password_label")}
-              className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors" dir="ltr"
+              className="w-full border-2 rounded-xl pl-4 pr-12 py-3.5 text-gray-900 focus:outline-none transition-colors" dir="ltr"
               style={{borderColor: errors.password ? "#EF4444" : (password?"var(--ink)":"var(--bc-b)")}}/>
-            <button onClick={()=>setShowPassword(!showPassword)} type="button" aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+            <button onClick={()=>setShowPassword(!showPassword)} type="button" aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
               {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
             </button>
           </div>
-          {errors.password && <p className="moter-field-error"><AlertCircle size={13}/> {errors.password}</p>}
+          {errors.password
+            ? <p className="moter-field-error"><AlertCircle size={13}/> {errors.password}</p>
+            : password
+              ? <PasswordStrengthMeter password={password}/>
+              : <p className="text-gray-400 text-xs mt-1.5">6 أحرف على الأقل</p>}
         </div>
 
         {formError && <p className="moter-field-error justify-center bg-red-50 rounded-xl px-3 py-2.5"><AlertCircle size={13}/> {formError}</p>}
@@ -1521,13 +1569,12 @@ function CompleteProfileScreen({ account, onDone, onLogout }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(account.photoURL || null);
   const [localPhone, setLocalPhone] = useState(splitSudanPhone(account.phone));
-  const [vehicle, setVehicle] = useState(account.vehicle || "");
-  const [plate, setPlate] = useState(account.plate || "");
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
   const photoInputId = "onboardPhotoInput_" + account.role;
 
   const handlePhoto = (e) => {
@@ -1548,11 +1595,8 @@ function CompleteProfileScreen({ account, onDone, onLogout }) {
     if (!phoneDigits) errs.phone = t("err_phone_required");
     else if (phoneDigits.length !== 9) errs.phone = t("err_phone_invalid");
     if (!photoPreview) errs.photo = t("err_photo_required");
-    if (account.role === "driver") {
-      if (!vehicle.trim()) errs.vehicle = "الرجاء إدخال نوع المركبة";
-      if (!plate.trim()) errs.plate = "الرجاء إدخال رقم لوحة المركبة";
-    }
     setErrors(errs);
+    if (Object.keys(errs).length) setShakeKey(k => k + 1);
     return Object.keys(errs).length === 0;
   };
 
@@ -1563,12 +1607,12 @@ function CompleteProfileScreen({ account, onDone, onLogout }) {
     try {
       const updated = await fbApi.completeProfile(account.id, {
         name: fullName, phone: toSudanE164(localPhone), photoFile,
-        ...(account.role === "driver" ? { vehicle, plate } : {}),
       });
       if (updated.photoUploadFailed) showToast("تم حفظ بياناتك، لكن تعذّر رفع الصورة — أضِفها لاحقاً من الإعدادات", "error");
       onDone(updated);
     } catch (e) {
       setFormError(e.message || "تعذّر حفظ بياناتك، حاول مرة أخرى");
+      setShakeKey(k => k + 1);
     } finally {
       setLoading(false);
     }
@@ -1587,7 +1631,7 @@ function CompleteProfileScreen({ account, onDone, onLogout }) {
       </div>
 
       <div className="flex-1 p-6 flex flex-col gap-4 mt-2">
-        <div className="flex flex-col items-center mb-1">
+        <div key={errors.photo ? `ph-${shakeKey}` : "ph"} className={`flex flex-col items-center mb-1 ${errors.photo ? "moter-shake" : ""}`}>
           <div className="relative">
             {photoPreview ? (
               <img src={photoPreview} alt={t("photo_label")} className="w-24 h-24 rounded-3xl object-cover"/>
@@ -1605,7 +1649,7 @@ function CompleteProfileScreen({ account, onDone, onLogout }) {
           {errors.photo && <p className="moter-field-error"><AlertCircle size={13}/> {errors.photo}</p>}
         </div>
 
-        <div>
+        <div key={errors.name ? `n-${shakeKey}` : "n"} className={errors.name ? "moter-shake" : ""}>
           <label className="text-sm font-semibold text-gray-700 block mb-2">{t("full_name")}</label>
           <input type="text" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="اكتب اسمك الكامل"
             aria-invalid={!!errors.name} aria-label={t("full_name")}
@@ -1614,28 +1658,9 @@ function CompleteProfileScreen({ account, onDone, onLogout }) {
           {errors.name && <p className="moter-field-error"><AlertCircle size={13}/> {errors.name}</p>}
         </div>
 
-        <SudanPhoneField value={localPhone} onChange={setLocalPhone} error={errors.phone} label={t("phone_label")}/>
-
-        {account.role === "driver" && (
-          <>
-            <div>
-              <label className="text-sm font-semibold text-gray-700 block mb-2">نوع المركبة</label>
-              <input type="text" value={vehicle} onChange={e=>setVehicle(e.target.value)} placeholder="مثال: TVS Star"
-                aria-invalid={!!errors.vehicle} aria-label="نوع المركبة"
-                className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors"
-                style={{borderColor: errors.vehicle ? "#EF4444" : (vehicle?"var(--ink)":"var(--bc-b)")}}/>
-              {errors.vehicle && <p className="moter-field-error"><AlertCircle size={13}/> {errors.vehicle}</p>}
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-700 block mb-2">رقم لوحة المركبة</label>
-              <input type="text" value={plate} onChange={e=>setPlate(e.target.value)} placeholder="مثال: KRT 1234" dir="ltr"
-                aria-invalid={!!errors.plate} aria-label="رقم لوحة المركبة"
-                className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors"
-                style={{borderColor: errors.plate ? "#EF4444" : (plate?"var(--ink)":"var(--bc-b)")}}/>
-              {errors.plate && <p className="moter-field-error"><AlertCircle size={13}/> {errors.plate}</p>}
-            </div>
-          </>
-        )}
+        <div key={errors.phone ? `ph2-${shakeKey}` : "ph2"} className={errors.phone ? "moter-shake" : ""}>
+          <SudanPhoneField value={localPhone} onChange={setLocalPhone} error={errors.phone} label={t("phone_label")}/>
+        </div>
 
         {formError && <p className="moter-field-error justify-center bg-red-50 rounded-xl px-3 py-2.5"><AlertCircle size={13}/> {formError}</p>}
 
@@ -1668,7 +1693,7 @@ function CustomerApp({ view, setView, onLogout, onAccountDeleted, currentRole, o
   const { t, orders, addOrder, updateOrder, account, updateProfile, pushNotification } = useApp();
   const profile = account;
   const setProfile = updateProfile;
-  const [form, setForm] = useState({ pickup:"", dropoff:"", item:"", notes:"", deliveryType:"parcel", paymentMethod:"cash" });
+  const [form, setForm] = useState({ pickup:"", pickupLoc:null, dropoff:"", dropoffLoc:null, item:"", notes:"", paymentMethod:"cash" });
 
   const myOrders = useMemo(() => orders.filter(o => o.customerId === profile.id).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)), [orders, profile.id]);
   const activeOrder = myOrders.find(o => o.status === "pending" || o.status === "in_transit") || null;
@@ -1679,6 +1704,7 @@ function CustomerApp({ view, setView, onLogout, onAccountDeleted, currentRole, o
 
   const navItems = [
     {id:"home",    Icon:Home,    label:t("nav_home")},
+    {id:"drivers", Icon:Users,   label:"السائقون"},
     {id:"history", Icon:History, label:t("nav_history")},
     {id:"profile", Icon:User,    label:t("nav_profile")},
   ];
@@ -1686,15 +1712,17 @@ function CustomerApp({ view, setView, onLogout, onAccountDeleted, currentRole, o
   return (
     <div className="min-h-screen bg-white flex flex-col" dir="rtl">
       <div className="flex-1 overflow-auto pb-20 view-transition" key={view}>
-        {view==="home"     && <CHome     setView={setView} profile={profile} activeOrder={activeOrder} setForm={setForm} onTrack={()=>activeOrder && goTrack(activeOrder.id)}/>}
-        {view==="form"     && <CForm     setView={setView} form={form} setForm={setForm}/>}
-        {view==="preview"  && <CPreview  setView={setView} form={form} profile={profile} addOrder={addOrder} onConfirmed={goTrack}/>}
-        {view==="tracking" && <CTracking setView={setView} order={trackingOrder} updateOrder={updateOrder}/>}
-        {view==="history"  && <CHistory  orders={myOrders}/>}
-        {view==="profile"  && <CProfile  onLogout={onLogout} setView={setView} profile={profile} orderCount={myOrders.length}/>}
-        {view==="settings" && <SettingsScreen setView={setView} backTo="profile" profile={profile} setProfile={setProfile} roleLabel={t("role_customer_title")} currentRole={currentRole} onSwitchRole={onSwitchRole} onAccountDeleted={onAccountDeleted}/>}
+        {view==="home"          && <CHome     setView={setView} profile={profile} activeOrder={activeOrder} setForm={setForm} onTrack={()=>activeOrder && goTrack(activeOrder.id)}/>}
+        {view==="drivers"       && <CDriversList setView={setView}/>}
+        {view==="form"          && <CForm     setView={setView} form={form} setForm={setForm}/>}
+        {view==="preview"       && <CPreview  setView={setView} form={form} profile={profile} addOrder={addOrder} onConfirmed={goTrack}/>}
+        {view==="tracking"      && <CTracking setView={setView} order={trackingOrder} updateOrder={updateOrder}/>}
+        {view==="history"       && <CHistory  orders={myOrders}/>}
+        {view==="profile"       && <CProfile  onLogout={onLogout} setView={setView} profile={profile} orderCount={myOrders.length}/>}
+        {view==="settings"      && <SettingsScreen setView={setView} backTo="profile" profile={profile} setProfile={setProfile} roleLabel={t("role_customer_title")} currentRole={currentRole} onSwitchRole={onSwitchRole} onAccountDeleted={onAccountDeleted} onLogout={onLogout}/>}
+        {view==="notifications" && <NotificationsScreen setView={setView} backTo="home"/>}
       </div>
-      {["home","history","profile"].includes(view) && (
+      {["home","drivers","history","profile"].includes(view) && (
         <nav className="fixed bottom-0 inset-x-0 bg-white border-t flex" style={{borderColor:"var(--bc-d)", maxWidth:480, margin:"0 auto"}}>
           {navItems.map(({id,Icon:Ic,label}) => (
             <button key={id} onClick={()=>setView(id)} aria-label={label} className={`flex-1 min-w-0 flex flex-col items-center py-3 px-1 gap-1 transition-colors ${view===id?"text-gray-950":"text-gray-300"}`}>
@@ -1709,24 +1737,21 @@ function CustomerApp({ view, setView, onLogout, onAccountDeleted, currentRole, o
 }
 
 function CHome({ setView, profile, activeOrder, setForm, onTrack }) {
-  const startOrder = (deliveryType) => {
-    setForm(f => ({ ...f, deliveryType: deliveryType || f.deliveryType || "parcel" }));
-    setView("form");
-  };
+  const startOrder = () => setView("form");
   return (
     <div>
       <div className="bg-gray-950 text-white p-5 pt-14">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-gray-500 text-sm">مرحباً 👋</p>
+            <p className="text-gray-500 text-sm">مرحباً</p>
             <h1 className="text-xl font-black">{profile.name}</h1>
           </div>
-          <NotificationBell variant="dark"/>
+          <NotificationBell variant="dark" onOpen={()=>setView("notifications")}/>
         </div>
         <div className="bg-gray-800 rounded-2xl p-5">
           <p className="text-gray-400 text-xs mb-1">خدمة التوصيل</p>
-          <p className="font-black text-lg mb-4">وصّل أي شيء خلال دقائق 🏍️</p>
-          <button onClick={()=>startOrder()} className="w-full bg-white text-gray-950 py-3 rounded-xl font-black text-sm active:scale-95 transition-transform">
+          <p className="font-black text-lg mb-4 flex items-center gap-2"><Bike size={19}/> وصّل أي شيء خلال دقائق</p>
+          <button onClick={startOrder} className="w-full bg-white text-gray-950 py-3 rounded-xl font-black text-sm active:scale-95 transition-transform">
             + اطلب توصيلة الآن
           </button>
         </div>
@@ -1749,37 +1774,32 @@ function CHome({ setView, profile, activeOrder, setForm, onTrack }) {
         </div>
       )}
       {!activeOrder && <NearbyDriversMap profile={profile}/>}
-      <div className="px-4 pb-4">
-        <p className="font-black text-gray-950 mb-3">اختر نوع التوصيل</p>
-        <div className="grid grid-cols-3 gap-3">
-          {DELIVERY_TYPES.slice(0,3).map(dt=>(
-            <button key={dt.id} onClick={()=>startOrder(dt.id)} className="bg-gray-50 border rounded-2xl p-4 text-center active:scale-95 transition-transform" style={{borderColor:"var(--bc-a)"}}>
-              <div className="text-2xl mb-2">{dt.emoji}</div>
-              <div className="font-bold text-gray-950 text-sm">{dt.label}</div>
-              <div className="text-gray-400 text-xs">{dt.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
 
 function CForm({ setView, form, setForm }) {
   const [errors, setErrors] = useState({});
+  const [picker, setPicker] = useState(null); // "pickup" | "dropoff" | null
+  const [shakeKey, setShakeKey] = useState(0);
 
   const validate = () => {
     const errs = {};
-    if (!form.pickup.trim()) errs.pickup = "الرجاء إدخال نقطة الاستلام";
-    if (!form.dropoff.trim()) errs.dropoff = "الرجاء إدخال نقطة التسليم";
+    if (!form.pickupLoc) errs.pickup = "الرجاء تحديد نقطة الاستلام على الخريطة";
+    if (!form.dropoffLoc) errs.dropoff = "الرجاء تحديد نقطة التسليم على الخريطة";
     if (!form.item.trim()) errs.item = "الرجاء تحديد نوع الشيء المطلوب توصيله";
-    if (!form.deliveryType) errs.deliveryType = "الرجاء اختيار نوع التوصيل";
-    if (!form.paymentMethod) errs.paymentMethod = "الرجاء اختيار طريقة الدفع";
     setErrors(errs);
+    if (Object.keys(errs).length) setShakeKey(k => k + 1);
     return Object.keys(errs).length === 0;
   };
 
   const next = () => { if (validate()) setView("preview"); };
+
+  const confirmLocation = (loc) => {
+    if (picker === "pickup") setForm({ ...form, pickup: loc.label, pickupLoc: { lat:loc.lat, lng:loc.lng } });
+    else if (picker === "dropoff") setForm({ ...form, dropoff: loc.label, dropoffLoc: { lat:loc.lat, lng:loc.lng } });
+    setPicker(null);
+  };
 
   return (
     <div>
@@ -1788,43 +1808,37 @@ function CForm({ setView, form, setForm }) {
           <ArrowLeft size={16} style={{transform:"scaleX(-1)"}}/> رجوع
         </button>
         <h2 className="text-xl font-black">طلب جديد</h2>
-        <p className="text-gray-400 text-sm mt-1">أدخل تفاصيل التوصيل</p>
+        <p className="text-gray-400 text-sm mt-1">حدّد نقطتي الاستلام والتسليم على الخريطة</p>
       </div>
       <div className="p-5 space-y-5">
-        <div>
+        <div key={(errors.pickup||errors.dropoff) ? `loc-${shakeKey}` : "loc"} className={(errors.pickup||errors.dropoff) ? "moter-shake" : ""}>
           <div className="bg-white border-2 rounded-2xl overflow-hidden" style={{borderColor: (errors.pickup||errors.dropoff) ? "#EF4444" : "var(--bc-a)"}}>
-            <div className="p-4 border-b" style={{borderColor:"var(--bc-c)"}}>
+            <button type="button" onClick={()=>setPicker("pickup")} className="w-full p-4 border-b text-right active:bg-gray-50 transition-colors" style={{borderColor:"var(--bc-c)"}}>
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">نقطة الاستلام</label>
               <div className="flex items-center gap-3 mt-2">
                 <div className="w-3 h-3 bg-gray-950 rounded-full flex-shrink-0"/>
-                <input value={form.pickup} onChange={e=>setForm({...form,pickup:e.target.value})}
-                  placeholder="مثال: السوق العربي" aria-label="نقطة الاستلام" list="moterNeighborhoods"
-                  className="flex-1 text-gray-950 placeholder-gray-300 outline-none font-semibold min-w-0"/>
+                {form.pickupLoc
+                  ? <span className="flex-1 text-gray-950 font-semibold min-w-0 truncate">{form.pickup}</span>
+                  : <span className="flex-1 text-gray-300 font-semibold min-w-0">اضغط لتحديد نقطة الاستلام</span>}
+                <Crosshair size={16} className="text-gray-400 flex-shrink-0"/>
               </div>
-            </div>
-            <div className="p-4">
+            </button>
+            <button type="button" onClick={()=>setPicker("dropoff")} className="w-full p-4 text-right active:bg-gray-50 transition-colors">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">نقطة التسليم</label>
               <div className="flex items-center gap-3 mt-2">
                 <div className="w-3 h-3 bg-gray-400 rounded-sm flex-shrink-0"/>
-                <input value={form.dropoff} onChange={e=>setForm({...form,dropoff:e.target.value})}
-                  placeholder="مثال: بري" aria-label="نقطة التسليم" list="moterNeighborhoods"
-                  className="flex-1 text-gray-950 placeholder-gray-300 outline-none font-semibold min-w-0"/>
+                {form.dropoffLoc
+                  ? <span className="flex-1 text-gray-950 font-semibold min-w-0 truncate">{form.dropoff}</span>
+                  : <span className="flex-1 text-gray-300 font-semibold min-w-0">اضغط لتحديد نقطة التسليم</span>}
+                <Crosshair size={16} className="text-gray-400 flex-shrink-0"/>
               </div>
-            </div>
+            </button>
           </div>
-          <datalist id="moterNeighborhoods">
-            {NEIGHBORHOODS.map(n => <option key={n.name} value={n.name}/>)}
-          </datalist>
           {errors.pickup && <p className="moter-field-error"><AlertCircle size={13}/> {errors.pickup}</p>}
           {!errors.pickup && errors.dropoff && <p className="moter-field-error"><AlertCircle size={13}/> {errors.dropoff}</p>}
         </div>
 
-        <div>
-          <label className="text-sm font-bold text-gray-700 block mb-2">نوع التوصيل</label>
-          <DeliveryTypePicker value={form.deliveryType} onChange={v=>setForm({...form, deliveryType:v})} error={errors.deliveryType}/>
-        </div>
-
-        <div>
+        <div key={errors.item ? `it-${shakeKey}` : "it"} className={errors.item ? "moter-shake" : ""}>
           <label className="text-sm font-bold text-gray-700 block mb-2">وصف الشيء المطلوب توصيله</label>
           <input value={form.item} onChange={e=>setForm({...form,item:e.target.value})}
             placeholder="مثال: طرد ملابس، وجبة عشاء..." aria-label="وصف الشيء المطلوب توصيله"
@@ -1834,7 +1848,13 @@ function CForm({ setView, form, setForm }) {
 
         <div>
           <label className="text-sm font-bold text-gray-700 block mb-2">طريقة الدفع</label>
-          <PaymentMethodPicker value={form.paymentMethod} onChange={v=>setForm({...form, paymentMethod:v})} error={errors.paymentMethod}/>
+          <div className="w-full p-4 rounded-2xl border-2 flex items-center gap-3" style={{borderColor:"var(--bc-a)"}}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gray-950 text-white"><Wallet size={17}/></div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-950 text-sm">الدفع عند الاستلام</p>
+              <p className="text-gray-400 text-xs truncate">نقداً لليد عند التسليم</p>
+            </div>
+          </div>
         </div>
 
         <div>
@@ -1848,6 +1868,17 @@ function CForm({ setView, form, setForm }) {
           عرض التسعيرة
         </button>
       </div>
+
+      {picker && (
+        <LocationPickerScreen
+          key={picker}
+          title={picker==="pickup" ? "نقطة الاستلام" : "نقطة التسليم"}
+          initial={picker==="pickup" ? form.pickupLoc : form.dropoffLoc}
+          centerHint={picker==="dropoff" ? form.pickupLoc : null}
+          onConfirm={confirmLocation}
+          onCancel={()=>setPicker(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1855,16 +1886,10 @@ function CForm({ setView, form, setForm }) {
 function CPreview({ setView, form, profile, addOrder, onConfirmed }) {
   const { showToast, pushNotification } = useApp();
   const [loading, setLoading] = useState(false);
-  const [promo, setPromo] = useState(null);
   const [onlineCount, setOnlineCount] = useState(null);
 
-  const p = resolveNeighborhood(form.pickup);
-  const d = resolveNeighborhood(form.dropoff);
-  const distance = Math.max(haversineKm(p, d), 0.6);
-  const baseFare = calcDeliveryPrice(distance, form.deliveryType);
-  const finalPrice = promo ? promo.finalAmount : baseFare;
-  const dtype = DELIVERY_TYPES.find(t=>t.id===form.deliveryType) || DELIVERY_TYPES[0];
-  const pmethod = PAYMENT_METHODS.find(pm=>pm.id===form.paymentMethod) || PAYMENT_METHODS[0];
+  const distance = Math.max(haversineKm(form.pickupLoc, form.dropoffLoc), 0.6);
+  const finalPrice = calcDeliveryPrice(distance);
 
   // عدد السائقين المتصلين الآن — اشتراك حي حقيقي، لا رقم وهمي ثابت
   useEffect(() => {
@@ -1884,17 +1909,17 @@ function CPreview({ setView, form, profile, addOrder, onConfirmed }) {
         customer: profile.name,
         customerPhone: profile.phone,
         pickup: form.pickup.trim(),
+        pickupLoc: form.pickupLoc,
         dropoff: form.dropoff.trim(),
+        dropoffLoc: form.dropoffLoc,
         item: form.item.trim(),
-        deliveryType: form.deliveryType,
         price: finalPrice,
         distance: Math.round(distance*10)/10,
         rating: null,
-        paymentMethod: form.paymentMethod,
-        promoCode: promo ? promo.code : null,
+        paymentMethod: "cash",
         notes: form.notes || "",
       });
-      showToast("تم إنشاء طلبك بنجاح ✅");
+      showToast("تم إنشاء طلبك بنجاح");
       pushNotification(profile.id, "طلبك قيد المعالجة", `جارٍ البحث عن أقرب سائق متاح لطلبك ${newOrder.id}`);
       onConfirmed(newOrder.id);
     } catch (e) {
@@ -1933,27 +1958,19 @@ function CPreview({ setView, form, profile, addOrder, onConfirmed }) {
         </div>
 
         <div className="bg-white border rounded-2xl p-4 flex items-center gap-3" style={{borderColor:"var(--bc-a)"}}>
-          <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">{dtype.emoji}</div>
+          <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0"><Package size={18} className="text-gray-500"/></div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-gray-950 text-sm truncate">{dtype.label} • {form.item}</p>
-            <p className="text-gray-400 text-xs truncate">{pmethod.label}</p>
+            <p className="font-bold text-gray-950 text-sm truncate">{form.item}</p>
+            <p className="text-gray-400 text-xs truncate">الدفع عند الاستلام</p>
           </div>
           <button onClick={()=>setView("form")} className="text-xs font-bold text-gray-500 underline flex-shrink-0">تعديل</button>
         </div>
 
-        <PromoInput orderAmount={baseFare} onApplied={setPromo}/>
-
         <div className="bg-gray-50 rounded-2xl p-4 text-sm">
           <div className="flex justify-between py-1.5 text-gray-500">
-            <span>{distance.toFixed(1)} كم × {dtype.label}</span>
-            <span>{fmtNum(baseFare)} ج.س</span>
+            <span>{distance.toFixed(1)} كم × {PRICING.km} ج.س</span>
+            <span>{fmtNum(finalPrice)} ج.س</span>
           </div>
-          {promo && (
-            <div className="flex justify-between py-1.5 text-green-600 font-semibold">
-              <span>خصم ({promo.code})</span>
-              <span>-{fmtNum(promo.discount)} ج.س</span>
-            </div>
-          )}
           <div className="flex justify-between py-1.5 border-t font-black text-gray-950 mt-1" style={{borderColor:"var(--bc-b)"}}>
             <span>الإجمالي</span>
             <span>{fmtNum(finalPrice)} ج.س</span>
@@ -1979,49 +1996,44 @@ function CPreview({ setView, form, profile, addOrder, onConfirmed }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// LIVE TRACKING MAP — Leaflet + OpenStreetMap (لا API key مطلوب)
-// useRef(null) مباشرةً على div — تحديث حي عند كل تغيّر في progress
+// LIVE TRACKING MAP — Leaflet + صور قمر صناعي/تضاريس حقيقية من Esri (لا يتطلب مفتاح API)
+// نقطة السائق متحركة دوماً بحسب GPS فعلي وارد منه، ونقطة العميل (الوجهة الحالية
+// حسب مرحلة الطلب) حمراء ثابتة — لا نرسم أبداً موقعاً للسائق حتى تصل أول إحداثية حقيقية له.
 // ══════════════════════════════════════════════════════════════════════════════
-// خريطة تتبّع حية حقيقية — الماركر يتحرك فقط بحسب موقع GPS فعلي وارد من السائق
-// (driverLoc)، وليس أي محاكاة زمنية. لا نرسم أبداً موقعاً للسائق حتى تصل أول
-// إحداثية حقيقية له، فلا نعرض أبداً معلومة موقع وهمية.
-function LiveTrackingMap({ pickupName, dropoffName, driverLoc }) {
+function LiveTrackingMap({ pickupLoc, dropoffLoc, driverLoc, phase = "to_pickup" }) {
   const divRef      = useRef(null);
   const mapRef      = useRef(null);
   const drvMkRef    = useRef(null);
   const doneLineRef = useRef(null);
-  const puRef       = useRef(null);
-  const doRef       = useRef(null);
+  const puMkRef     = useRef(null);
+  const doMkRef     = useRef(null);
   const animRef     = useRef(null);
   const curPosRef   = useRef(null);
+  const puRef       = useRef(pickupLoc);
+  const doRef       = useRef(dropoffLoc);
+  puRef.current = pickupLoc;
+  doRef.current = dropoffLoc;
 
-  const pu  = resolveNeighborhood(pickupName);
-  const drp = resolveNeighborhood(dropoffName);
-  puRef.current = pu;
-  doRef.current = drp;
+  const pinIcon = (L, active) => L.divIcon({
+    html: active ? '<div class="moter-pin-active"></div>' : '<div class="moter-pin-muted"></div>',
+    className:"", iconSize: active?[28,38]:[13,13], iconAnchor: active?[14,38]:[6.5,6.5],
+  });
 
-  // ── تهيئة الخريطة الثابتة (نقطتا الاستلام/التسليم + الخط المنقط) عند أول تركيب ──
+  // ── تهيئة الخريطة الثابتة (نقطتا الاستلام/التسليم + خط المسار الباهت) عند أول تركيب ──
   useEffect(() => {
     const el = divRef.current;
-    if (!el || mapRef.current) return;
+    if (!el || mapRef.current || !pickupLoc || !dropoffLoc) return;
     const L = window.L;
     if (!L) return;
-    const pu2 = puRef.current, drp2 = doRef.current;
+    const pu2 = pickupLoc, drp2 = dropoffLoc;
 
     const map = L.map(el, { zoomControl:false, attributionControl:false, scrollWheelZoom:false, dragging:true, tap:true });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:18 }).addTo(map);
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom:19 }).addTo(map);
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom:19, opacity:0.92 }).addTo(map);
     L.control.zoom({ position:"bottomright" }).addTo(map);
-    const mk = (html, w, h, ax, ay) => L.divIcon({ html, className:"", iconSize:[w,h], iconAnchor:[ax,ay] });
 
-    L.marker([pu2.lat, pu2.lng], { icon: mk(
-      '<div style="width:14px;height:14px;background:#fff;border:3px solid #0A0A0A;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.45)"></div>', 14,14,7,7
-    )}).addTo(map);
-    L.marker([drp2.lat, drp2.lng], { icon: mk(
-      '<div style="position:relative;width:32px;height:44px;display:flex;flex-direction:column;align-items:center">'
-      + '<div style="width:28px;height:28px;background:#0A0A0A;border:3px solid #fff;border-radius:50%;box-shadow:0 4px 14px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center">'
-      + '<div style="width:9px;height:9px;background:#fff;border-radius:50%"></div></div>'
-      + '<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:14px solid #0A0A0A;margin-top:-1px"></div></div>', 32,44,16,44
-    )}).addTo(map);
+    puMkRef.current = L.marker([pu2.lat, pu2.lng], { icon: pinIcon(L, phase!=="to_dropoff") }).addTo(map);
+    doMkRef.current = L.marker([drp2.lat, drp2.lng], { icon: pinIcon(L, phase==="to_dropoff") }).addTo(map);
     L.polyline([[pu2.lat,pu2.lng],[drp2.lat,drp2.lng]], { color:"#0A0A0A", weight:3, opacity:0.14, dashArray:"9 11" }).addTo(map);
 
     mapRef.current = map;
@@ -2031,25 +2043,40 @@ function LiveTrackingMap({ pickupName, dropoffName, driverLoc }) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
       map.remove();
       mapRef.current = null; drvMkRef.current = null; doneLineRef.current = null; curPosRef.current = null;
+      puMkRef.current = null; doMkRef.current = null;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── تبديل الدبّوس النشط (الأحمر) بين الاستلام والتسليم عند تغيّر مرحلة الطلب ──
+  useEffect(() => {
+    const L = window.L;
+    if (!L || !puMkRef.current || !doMkRef.current) return;
+    puMkRef.current.setIcon(pinIcon(L, phase!=="to_dropoff"));
+    doMkRef.current.setIcon(pinIcon(L, phase==="to_dropoff"));
+  }, [phase]);
+
   // ── إنشاء أيقونة السائق عند وصول أول موقع حقيقي، ثم انتقال ناعم (tween) لكل تحديث GPS تالٍ ──
   useEffect(() => {
-    const map = mapRef.current, pu2 = puRef.current, L = window.L;
-    if (!map || !pu2 || !driverLoc || !L) return;
+    const map = mapRef.current, L = window.L;
+    if (!map || !driverLoc || !L) return;
     const to = { lat: driverLoc.lat, lng: driverLoc.lng };
+    const activePt = phase === "to_dropoff" ? doRef.current : puRef.current;
+
+    const arrowHtml = (heading) => (heading == null)
+      ? '<div style="width:10px;height:10px;background:#fff;border-radius:50%"></div>'
+      : `<svg class="moter-heading-arrow" width="17" height="17" viewBox="0 0 24 24" fill="#fff" style="transform:rotate(${heading}deg)"><path d="M12 2l7 20-7-5-7 5z"/></svg>`;
 
     if (!drvMkRef.current) {
-      const mk = (html, w, h, ax, ay) => L.divIcon({ html, className:"", iconSize:[w,h], iconAnchor:[ax,ay] });
-      drvMkRef.current = L.marker([to.lat, to.lng], {
-        icon: mk('<div style="width:46px;height:46px;background:#0A0A0A;border:4px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:0 5px 20px rgba(0,0,0,.55)">🏍️</div>', 46,46,23,23),
-        zIndexOffset: 1000,
-      }).addTo(map);
-      doneLineRef.current = L.polyline([[pu2.lat,pu2.lng],[to.lat,to.lng]], { color:"#0A0A0A", weight:5.5, opacity:0.78, lineCap:"round", lineJoin:"round" }).addTo(map);
+      const icon = L.divIcon({ html:`<div class="moter-driver-pin">${arrowHtml(driverLoc.heading)}</div>`, className:"", iconSize:[40,40], iconAnchor:[20,20] });
+      drvMkRef.current = L.marker([to.lat, to.lng], { icon, zIndexOffset: 1000 }).addTo(map);
+      if (activePt) doneLineRef.current = L.polyline([[to.lat,to.lng],[activePt.lat,activePt.lng]], { color:"#DC2626", weight:4.5, opacity:0.85, lineCap:"round", lineJoin:"round" }).addTo(map);
       curPosRef.current = to;
       return;
     }
+
+    const el = drvMkRef.current.getElement();
+    const arrowEl = el && el.querySelector(".moter-heading-arrow");
+    if (arrowEl && driverLoc.heading != null) arrowEl.style.transform = `rotate(${driverLoc.heading}deg)`;
 
     const from = curPosRef.current || to;
     if (animRef.current) cancelAnimationFrame(animRef.current);
@@ -2060,18 +2087,18 @@ function LiveTrackingMap({ pickupName, dropoffName, driverLoc }) {
       const lat = from.lat + (to.lat - from.lat) * ease;
       const lng = from.lng + (to.lng - from.lng) * ease;
       drvMkRef.current.setLatLng([lat, lng]);
-      doneLineRef.current.setLatLngs([[pu2.lat, pu2.lng], [lat, lng]]);
+      if (doneLineRef.current && activePt) doneLineRef.current.setLatLngs([[lat, lng],[activePt.lat, activePt.lng]]);
       if (tt < 1) animRef.current = requestAnimationFrame(step);
       else { curPosRef.current = to; animRef.current = null; }
     };
     animRef.current = requestAnimationFrame(step);
-  }, [driverLoc && driverLoc.lat, driverLoc && driverLoc.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [driverLoc && driverLoc.lat, driverLoc && driverLoc.lng, driverLoc && driverLoc.heading, phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{width:"100%",height:"100%",position:"relative"}}>
       <div ref={divRef} style={{width:"100%",height:"100%",background:"#e8e8e8"}}/>
       {!driverLoc && (
-        <div style={{position:"absolute",top:10,insetInlineStart:10,zIndex:600,background:"rgba(10,10,10,.75)",color:"#fff",fontSize:11,fontWeight:700,padding:"5px 10px",borderRadius:20,display:"flex",alignItems:"center",gap:6}}>
+        <div className="moter-map-badge">
           <span style={{width:6,height:6,borderRadius:"50%",background:"#FBBF24"}}/> جارٍ تحديد موقع السائق...
         </div>
       )}
@@ -2122,7 +2149,8 @@ function NearbyDriversMap({ profile }) {
     const L = window.L;
     if (!L) return;
     const map = L.map(el, { zoomControl:false, attributionControl:false, scrollWheelZoom:false, dragging:true, tap:true });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:18 }).addTo(map);
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom:19 }).addTo(map);
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom:19, opacity:0.92 }).addTo(map);
     map.setView([myLoc.lat, myLoc.lng], 14);
     meMkRef.current = L.marker([myLoc.lat, myLoc.lng], {
       icon: L.divIcon({ html:'<div style="width:16px;height:16px;background:#2563eb;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 4px rgba(37,99,235,.25)"></div>', className:"", iconSize:[16,16], iconAnchor:[8,8] })
@@ -2137,7 +2165,7 @@ function NearbyDriversMap({ profile }) {
     const seen = new Set();
     nearby.forEach(d => {
       seen.add(d.id);
-      const mkHtml = '<div style="width:34px;height:34px;background:#0A0A0A;border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 3px 12px rgba(0,0,0,.4)">🏍️</div>';
+      const mkHtml = '<div class="moter-driver-pin" style="width:34px;height:34px"><div style="width:9px;height:9px;background:#fff;border-radius:50%"></div></div>';
       if (markersRef.current[d.id]) {
         markersRef.current[d.id].setLatLng([d.location.lat, d.location.lng]);
       } else {
@@ -2191,7 +2219,7 @@ function CTracking({ setView, order, updateOrder }) {
   if (!order) {
     return (
       <div className="p-5">
-        <EmptyState emoji="📦" title="لا يوجد طلب لعرضه" subtitle="عد إلى الرئيسية لإنشاء طلب جديد"
+        <EmptyState Icon={Package} title="لا يوجد طلب لعرضه" subtitle="عد إلى الرئيسية لإنشاء طلب جديد"
           action={<button onClick={()=>setView("home")} className="mt-4 bg-gray-950 text-white px-6 py-2.5 rounded-xl font-bold text-sm">الرئيسية</button>}/>
       </div>
     );
@@ -2222,23 +2250,21 @@ function CTracking({ setView, order, updateOrder }) {
 
   const submitRating = async (v) => {
     setRating(v);
-    try { await fbApi.rateOrder(order.id, order.driverId, v); showToast("شكراً على تقييمك! ⭐"); }
+    try { await fbApi.rateOrder(order.id, order.driverId, v); showToast("شكراً على تقييمك!"); }
     catch (e) { showToast("تعذّر إرسال التقييم", "error"); }
   };
-
-  const dtype   = DELIVERY_TYPES.find(t => t.id === order.deliveryType);
-  const pmethod = PAYMENT_METHODS.find(p => p.id === order.paymentMethod);
 
   return (
     <div style={{minHeight:"100vh", background:"var(--app-bg)"}}>
 
       {/* ═══ قسم الخريطة — الجزء العلوي ═══ */}
-      {!cancelled && order.pickup && order.dropoff ? (
+      {!cancelled && order.pickupLoc && order.dropoffLoc ? (
         <div style={{position:"relative", height:300, background:"#ddd"}}>
           <LiveTrackingMap
-            pickupName={order.pickup}
-            dropoffName={order.dropoff}
+            pickupLoc={order.pickupLoc}
+            dropoffLoc={order.dropoffLoc}
             driverLoc={driverLoc}
+            phase={order.phase}
           />
 
           {/* شريط علوي شبه شفاف فوق الخريطة */}
@@ -2253,7 +2279,7 @@ function CTracking({ setView, order, updateOrder }) {
                   {done ? "اكتمل التوصيل" : order.status==="pending" ? "انتظار سائق" : "جاري التوصيل"}
                 </p>
                 <button onClick={copyId} style={{display:"flex",alignItems:"center",gap:5,color:"#fff",fontSize:13,fontWeight:800,opacity:.9,marginTop:1}}>
-                  {order.id} <Copy size={11}/>{copied && <span style={{fontSize:10}}>✓</span>}
+                  {order.id} <Copy size={11}/>{copied && <Check size={11}/>}
                 </button>
               </div>
               {!done && eta != null && (
@@ -2263,8 +2289,8 @@ function CTracking({ setView, order, updateOrder }) {
                 </div>
               )}
               {done && (
-                <div style={{background:"#16a34a",borderRadius:20,padding:"6px 14px",flexShrink:0}}>
-                  <p style={{color:"#fff",fontSize:12,fontWeight:900}}>✓ تم التوصيل</p>
+                <div style={{background:"#16a34a",borderRadius:20,padding:"6px 14px",flexShrink:0,display:"flex",alignItems:"center",gap:5}}>
+                  <CheckCircle size={13} className="text-white"/><p style={{color:"#fff",fontSize:12,fontWeight:900}}>تم التوصيل</p>
                 </div>
               )}
             </div>
@@ -2290,15 +2316,16 @@ function CTracking({ setView, order, updateOrder }) {
               position:"absolute", bottom:12, right:12, left:12, zIndex:500,
               background:"rgba(217,119,6,.92)", backdropFilter:"blur(8px)",
               borderRadius:14, padding:"10px 14px", textAlign:"center",
+              display:"flex", alignItems:"center", justifyContent:"center", gap:7,
             }}>
-              <p style={{color:"#fff",fontSize:13,fontWeight:800}}>⏳ جارٍ البحث عن سائق قريب...</p>
+              <Spinner/><p style={{color:"#fff",fontSize:13,fontWeight:800}}>جارٍ البحث عن سائق قريب...</p>
             </div>
           )}
         </div>
       ) : cancelled ? (
         <div className="bg-gray-800 text-white p-5 pt-14">
           <p style={{fontSize:11,opacity:.55,fontWeight:700,letterSpacing:.5}}>رقم الطلب</p>
-          <h2 className="text-xl font-black mt-0.5">تم إلغاء الطلب 🚫</h2>
+          <h2 className="text-xl font-black mt-0.5 flex items-center gap-2"><XCircle size={19}/> تم إلغاء الطلب</h2>
           <p className="text-sm opacity-50 mt-1">{order.id}</p>
         </div>
       ) : null}
@@ -2310,7 +2337,9 @@ function CTracking({ setView, order, updateOrder }) {
         {done && (
           <div className="bg-white border rounded-2xl overflow-hidden" style={{borderColor:"var(--bc-a)"}}>
             <div className="bg-green-50 p-5 text-center border-b" style={{borderColor:"#d1fae5"}}>
-              <div className="text-5xl mb-2">🎉</div>
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle size={30} className="text-green-600"/>
+              </div>
               <p className="font-black text-green-800 text-lg">تم توصيل طلبك!</p>
               <p className="text-green-600 text-sm mt-1">{order.rating ? "شكراً على تقييمك" : `قيّم تجربتك مع ${driverName}`}</p>
             </div>
@@ -2318,8 +2347,8 @@ function CTracking({ setView, order, updateOrder }) {
               <div className="flex justify-center gap-3 mb-4">
                 {[1,2,3,4,5].map(s=>(
                   <button key={s} onClick={()=>submitRating(s)} disabled={!!order.rating}
-                    style={{fontSize:32,transition:"transform .15s"}} className="active:scale-110">
-                    {s<=(order.rating||rating)?"⭐":"☆"}
+                    className="active:scale-110 transition-transform">
+                    <Star size={30} className={s<=(order.rating||rating) ? "text-amber-400 fill-amber-400" : "text-gray-200 fill-gray-200"}/>
                   </button>
                 ))}
               </div>
@@ -2353,10 +2382,7 @@ function CTracking({ setView, order, updateOrder }) {
               <p className="font-black text-gray-950 truncate">{driverName}</p>
               <div className="flex items-center gap-1 mt-0.5">
                 <Star size={12} className="text-amber-400 fill-amber-400"/>
-                <span className="text-sm text-gray-500">
-                  {driverRating != null ? driverRating.toFixed(1) : "5.0"}
-                  {driverProfile ? ` • ${driverProfile.vehicle}` : ""}
-                </span>
+                <span className="text-sm text-gray-500">{driverRating != null ? driverRating.toFixed(1) : "5.0"}</span>
               </div>
             </div>
             {driverProfile && (
@@ -2379,8 +2405,8 @@ function CTracking({ setView, order, updateOrder }) {
         {!cancelled && (
           <div className="bg-white border rounded-2xl overflow-hidden" style={{borderColor:"var(--bc-a)"}}>
             {[
-              ["نوع التوصيل", dtype ? `${dtype.emoji} ${dtype.label}` : "—"],
-              ["طريقة الدفع", pmethod ? pmethod.label : "—"],
+              ["الشيء المطلوب", order.item || "—"],
+              ["طريقة الدفع", "الدفع عند الاستلام"],
               ["المبلغ",      `${fmtNum(order.price)} ج.س`],
               ["المسافة",     `${order.distance} كم`],
             ].map(([label, val], i, arr) => (
@@ -2435,13 +2461,12 @@ function CHistory({ orders }) {
         </div>
       </div>
       {shown.length === 0 && (
-        <EmptyState emoji="📦" title={query ? t("no_results_title") : t("no_history_title")}
+        <EmptyState Icon={Package} title={query ? t("no_results_title") : t("no_history_title")}
           subtitle={query ? t("no_results_orders") : t("no_history_sub")}
           action={query && <button onClick={()=>setQuery("")} className="mt-4 text-sm font-bold text-gray-950 underline">{t("clear_search")}</button>}/>
       )}
       <div className="p-4 space-y-3">
         {shown.map(o=>{
-          const dtype = DELIVERY_TYPES.find(t=>t.id===o.deliveryType);
           return (
           <div key={o.id} className="bg-white border rounded-2xl p-4" style={{borderColor:"var(--bc-a)"}}>
             <div className="flex justify-between items-center mb-3 gap-2">
@@ -2460,7 +2485,7 @@ function CHistory({ orders }) {
               </div>
             </div>
             <div className="flex justify-between items-center pt-3 border-t text-xs" style={{borderColor:"var(--bc-c)"}}>
-              <span className="text-gray-400 truncate">{dtype ? dtype.emoji : ""} {o.time} • {o.item}</span>
+              <span className="text-gray-400 truncate">{o.time} • {o.item}</span>
               <span className="font-black text-gray-950 flex-shrink-0">{o.price} ج.س</span>
             </div>
             {o.status === "delivered" && o.rating && (
@@ -2478,14 +2503,10 @@ function CProfile({ onLogout, setView, profile, orderCount }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const doLogout = async () => { setLoggingOut(true); await onLogout(); };
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [offersOpen, setOffersOpen] = useState(false);
-  useScrollLock(offersOpen);
   const unread = notifications.filter(n=>!n.read).length;
   const items = [
     {Icon:Package,label:"طلباتي",sub:`${orderCount} طلب`, action:()=>setView("history")},
-    {Icon:Tag,label:"العروض والخصومات",sub:`${PROMO_CODES.filter(p=>p.active).length} نشط`, action:()=>setOffersOpen(true)},
-    {Icon:Bell,label:"الإشعارات",sub: unread>0 ? `${unread} جديد` : "", action:()=>setNotifOpen(true)},
+    {Icon:Bell,label:"الإشعارات",sub: unread>0 ? `${unread} جديد` : "", action:()=>setView("notifications")},
     {Icon:Settings,label:"الإعدادات",sub:"", action:()=>setView("settings")},
   ];
   return (
@@ -2508,35 +2529,11 @@ function CProfile({ onLogout, setView, profile, orderCount }) {
             <ChevronRight size={15} className="text-gray-300 flex-shrink-0" style={{transform:"scaleX(-1)"}}/>
           </button>
         ))}
-        <NotificationsModal open={notifOpen} onClose={()=>setNotifOpen(false)}/>
         <button onClick={()=>setConfirmLogout(true)} className="w-full bg-red-50 border border-red-100 rounded-xl p-4 flex items-center gap-3">
           <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0"><LogOut size={17} className="text-red-500"/></div>
           <span className="font-bold text-red-600 flex-1 min-w-0 truncate text-right">تسجيل الخروج</span>
         </button>
       </div>
-      {offersOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4 sm:items-center sm:pb-0" style={{background:"rgba(10,10,10,0.55)"}} onClick={()=>setOffersOpen(false)}>
-          <div className="w-full bg-white rounded-3xl overflow-hidden" style={{maxWidth:420, maxHeight:"75vh"}} onClick={e=>e.stopPropagation()}>
-            <div className="p-5 border-b flex items-center justify-between" style={{borderColor:"var(--bc-a)"}}>
-              <h3 className="font-black text-gray-950">العروض والخصومات</h3>
-              <button onClick={()=>setOffersOpen(false)} aria-label="إغلاق" className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={14} className="text-gray-600"/></button>
-            </div>
-            <div className="p-4 space-y-3 overflow-auto" style={{maxHeight:"55vh"}}>
-              {PROMO_CODES.filter(p=>p.active).map(p=>(
-                <div key={p.code} className="bg-gray-50 border rounded-2xl p-4 flex items-center justify-between gap-3" style={{borderColor:"var(--bc-a)"}}>
-                  <div className="min-w-0">
-                    <p className="font-black text-gray-950 text-sm truncate">{p.label}</p>
-                    <p className="text-gray-400 text-xs" dir="ltr">{p.code}</p>
-                  </div>
-                  <button onClick={()=>{ try{ navigator.clipboard.writeText(p.code); }catch(e){} }} className="bg-gray-950 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 flex-shrink-0">
-                    <Copy size={12}/> نسخ
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
       <ConfirmModal
         open={confirmLogout}
         danger
@@ -2548,6 +2545,86 @@ function CProfile({ onLogout, setView, profile, orderCount }) {
         onConfirm={doLogout}
         onCancel={()=>setConfirmLogout(false)}
       />
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// قائمة كل السائقين — تبويب سفلي جديد للعميل. عرض بأسلوب قائمة تواصل احترافية:
+// صورة + اسم + حالة الاتصال لكل سائق، مع زرَي اتصال وطلب توصيلة. بيانات حية من
+// Firestore دوماً — لا أسماء أو صور تجريبية ثابتة.
+// ══════════════════════════════════════════════════════════════════════════════
+function CDriversList({ setView }) {
+  const [drivers, setDrivers] = useState(null); // null = جارٍ التحميل
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    const unsub = usersCol.where("role","==","driver").where("profileComplete","==",true)
+      .onSnapshot(
+        (snap) => {
+          const list = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+          list.sort((a,b) => (b.online?1:0)-(a.online?1:0) || String(a.name||"").localeCompare(String(b.name||""),"ar"));
+          setDrivers(list);
+        },
+        () => setDrivers([])
+      );
+    return unsub;
+  }, []);
+
+  const shown = useMemo(() => {
+    if (!drivers) return [];
+    const q = query.trim();
+    return q ? drivers.filter(d => String(d.name||"").includes(q)) : drivers;
+  }, [drivers, query]);
+
+  const onlineCount = drivers ? drivers.filter(d=>d.online).length : 0;
+
+  return (
+    <div>
+      <div className="bg-gray-950 text-white p-5 pt-14">
+        <h2 className="text-xl font-black">السائقون</h2>
+        <p className="text-gray-400 text-sm mt-1">{drivers ? `${drivers.length} سائق مسجَّل • ${onlineCount} متصل الآن` : "جارٍ التحميل..."}</p>
+      </div>
+      <div className="p-4 pb-2">
+        <div className="relative">
+          <SearchIcon size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-300"/>
+          <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="ابحث باسم السائق" aria-label="ابحث باسم السائق"
+            className="w-full border-2 rounded-xl pr-11 pl-4 py-2.5 text-sm text-gray-950 placeholder-gray-300 focus:outline-none focus:border-gray-950 transition-colors" style={{borderColor:"var(--bc-b)"}}/>
+        </div>
+      </div>
+
+      {drivers === null ? (
+        <div className="px-4 pt-2 space-y-2">{[1,2,3,4].map(i=><SkeletonCard key={i}/>)}</div>
+      ) : shown.length === 0 ? (
+        <EmptyState Icon={Users} title={query ? "لا توجد نتائج" : "لا يوجد سائقون مسجَّلون بعد"} subtitle={query ? "جرّب اسماً آخر" : "سيظهر السائقون هنا فور تسجيلهم في التطبيق"}/>
+      ) : (
+        <div className="divide-y" style={{borderColor:"var(--bc-c)"}}>
+          {shown.map(d => (
+            <div key={d.id} className="flex items-center gap-3 px-4 py-3">
+              <div className="relative flex-shrink-0" style={{width:52,height:52}}>
+                {d.photoURL ? (
+                  <img src={d.photoURL} alt={d.name} className="rounded-2xl object-cover" style={{width:52,height:52}}/>
+                ) : (
+                  <div className="rounded-2xl bg-gray-100 text-gray-500 flex items-center justify-center font-black text-lg" style={{width:52,height:52}}>{String(d.name||"?")[0]}</div>
+                )}
+                <span className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 rounded-full border-2 border-white" style={{background: d.online ? "#22C55E" : "#D1D5DB"}}/>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-950 text-sm truncate">{d.name}</p>
+                <p className={`text-xs font-semibold ${d.online ? "text-green-600" : "text-gray-400"}`}>{d.online ? "متصل الآن" : "غير متصل"}</p>
+              </div>
+              <a href={`tel:${d.phone||""}`} aria-label={`اتصال بـ ${d.name}`}
+                className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform">
+                <Phone size={16} className="text-gray-700"/>
+              </a>
+              <button onClick={()=>setView("form")} aria-label="اطلب توصيلة" type="button"
+                className="w-10 h-10 bg-gray-950 rounded-full flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform">
+                <Bike size={16} className="text-white"/>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2783,21 +2860,19 @@ function DOrders({ pending, profile, setView }) {
         </div>
       </div>
       {shown.length === 0 && (
-        <EmptyState emoji="🏍️" title={query ? t("no_results_title") : t("no_pending_orders_title")}
+        <EmptyState Icon={Bike} title={query ? t("no_results_title") : t("no_pending_orders_title")}
           subtitle={query ? t("no_results_orders") : t("no_pending_orders_sub")}
           action={query && <button onClick={()=>setQuery("")} className="mt-4 text-sm font-bold text-gray-950 underline">{t("clear_search")}</button>}/>
       )}
       <div className="p-4 space-y-4">
         {shown.map(o=>{
-          const dtype = DELIVERY_TYPES.find(dt=>dt.id===o.deliveryType);
-          const pmethod = PAYMENT_METHODS.find(p=>p.id===o.paymentMethod);
           return (
           <div key={o.id} className="bg-white border-2 rounded-2xl overflow-hidden" style={{borderColor:"var(--bc-a)"}}>
             <div className="p-4">
               <div className="flex justify-between items-start gap-3 mb-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-black text-gray-950 text-base truncate">{o.customer}</p>
-                  <p className="text-gray-400 text-xs truncate">{dtype?dtype.emoji+" ":""}{o.item}</p>
+                  <p className="text-gray-400 text-xs truncate">{o.item}</p>
                 </div>
                 <div className="text-left flex-shrink-0">
                   <p className="text-2xl font-black text-gray-950 whitespace-nowrap">{o.price}</p>
@@ -2814,10 +2889,10 @@ function DOrders({ pending, profile, setView }) {
                   <p className="text-sm text-gray-500 truncate min-w-0">{o.dropoff}</p>
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-3 text-xs text-gray-400 flex-wrap gap-1">
-                <span>📍 {o.distFromMe!=null ? `${o.distFromMe.toFixed(1)} كم منك` : `${o.distance} كم`}</span>
-                <span>⏱ ~{Math.round(o.distance*4)} دقيقة</span>
-                <span>{pmethod ? pmethod.label : ""}</span>
+              <div className="flex items-center justify-between pt-3 text-xs text-gray-400 flex-wrap gap-3">
+                <span className="flex items-center gap-1"><MapPin size={12}/> {o.distFromMe!=null ? `${o.distFromMe.toFixed(1)} كم منك` : `${o.distance} كم`}</span>
+                <span className="flex items-center gap-1"><Clock size={12}/> ~{Math.round(o.distance*4)} دقيقة</span>
+                <span>الدفع عند الاستلام</span>
               </div>
             </div>
             <div className="grid grid-cols-2 border-t" style={{borderColor:"var(--bc-d)"}}>
@@ -2843,7 +2918,7 @@ function DActive({ order, profile, setView, updateOrder }) {
   if (!order) {
     return (
       <div className="p-5">
-        <EmptyState emoji="🏍️" title="لا توجد توصيلة جارية" subtitle="اقبل طلباً من قائمة الطلبات المتاحة"
+        <EmptyState Icon={Bike} title="لا توجد توصيلة جارية" subtitle="اقبل طلباً من قائمة الطلبات المتاحة"
           action={<button onClick={()=>setView("orders")} className="mt-4 bg-gray-950 text-white px-6 py-2.5 rounded-xl font-bold text-sm">الطلبات المتاحة</button>}/>
       </div>
     );
@@ -2882,12 +2957,13 @@ function DActive({ order, profile, setView, updateOrder }) {
     <div style={{minHeight:"100vh", background:"var(--app-bg)"}}>
 
       {/* ═══ الخريطة الحية — تملأ الجزء العلوي بالكامل ═══ */}
-      {order.pickup && order.dropoff && (
+      {order.pickupLoc && order.dropoffLoc && (
         <div style={{position:"relative", height:290, background:"#ddd"}}>
           <LiveTrackingMap
-            pickupName={order.pickup}
-            dropoffName={order.dropoff}
+            pickupLoc={order.pickupLoc}
+            dropoffLoc={order.dropoffLoc}
             driverLoc={myLoc}
+            phase={order.phase}
           />
 
           {/* شريط علوي — تدرج شفاف */}
@@ -3504,8 +3580,14 @@ function loadNav() {
 }
 
 function AppShell() {
-  const [showSplash, setShowSplash] = useState(true);
+  // الشاشة الافتتاحية: تبقى ظاهرة كاملة الوضوح حتى تجهيز التطبيق فعلياً (لا حد
+  // زمني ثابت يُخفيها بمعزل عن الجاهزية الحقيقية)، ثم تبدأ انتقال خروج قصير،
+  // ولا تُزال من العرض إلا بعد اكتمال ذلك الانتقال — فلا تظهر أبداً شاشة فارغة
+  // "معلَّقة" بين اختفاء الشعار وظهور واجهة اختيار الحساب.
+  const [minDelayDone, setMinDelayDone] = useState(false);
+  const [splashMounted, setSplashMounted] = useState(true);
   const [authReady, setAuthReady] = useState(false);
+  const splashExiting = minDelayDone && authReady;
   const [nav, setNavState] = useState(loadNav);
   const [sessionAccount, setSessionAccount] = useState(null);
   const [pendingUsername, setPendingUsername] = useState(null);
@@ -3537,10 +3619,19 @@ function AppShell() {
     return updated;
   };
 
+  // حد أدنى قصير لضمان ظهور الشعار فعلياً حتى على اتصال فائق السرعة (لا يمنع
+  // الخروج إن كانت المصادقة أبطأ منه — هي من تقرر وحدها متى نبدأ الخروج فعلياً)
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 1300);
+    const timer = setTimeout(() => setMinDelayDone(true), 550);
     return () => clearTimeout(timer);
   }, []);
+
+  // إزالة الشاشة نهائياً من العرض فقط بعد اكتمال انتقال الخروج البصري (opacity)
+  useEffect(() => {
+    if (!splashExiting) return;
+    const timer = setTimeout(() => setSplashMounted(false), 420);
+    return () => clearTimeout(timer);
+  }, [splashExiting]);
 
   useEffect(() => {
     document.documentElement.lang = "ar";
@@ -3702,7 +3793,7 @@ function AppShell() {
   return (
     <AppCtx.Provider value={ctxValue}>
       <div data-theme={appSettings.darkMode ? "dark" : "light"} style={{ background:"var(--app-bg)", minHeight:"100vh" }}>
-        {(showSplash || !authReady) && <SplashScreen/>}
+        {splashMounted && <SplashScreen exiting={splashExiting}/>}
         {content}
         <ToastHost toasts={toasts}/>
       </div>
