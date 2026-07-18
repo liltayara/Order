@@ -802,11 +802,11 @@ const fbApi = {
     return { ...snap.data(), id: uid };
   },
 
-  // حفظ البيانات الإجبارية بعد أول دخول (الاسم + الهاتف + الصورة، وبيانات
-  // المركبة للسائق) — تُنهي هذه الخطوة profileComplete فيدخل المستخدم التطبيق.
-  // فشل رفع الصورة تحديداً (مهلة/Storage) لا يوقف حفظ بقية البيانات أبداً؛
-  // نُعلم الواجهة بذلك عبر photoUploadFailed لتنبيه المستخدم بلطف بدل تعليقه.
-  async completeProfile(uid, { name, phone, photoFile, vehicle, plate }) {
+  // حفظ البيانات الإجبارية بعد أول دخول (الاسم + الهاتف + الصورة) — تُنهي هذه
+  // الخطوة profileComplete فيدخل المستخدم التطبيق. فشل رفع الصورة تحديداً
+  // (مهلة/Storage) لا يوقف حفظ بقية البيانات أبداً؛ نُعلم الواجهة بذلك عبر
+  // photoUploadFailed لتنبيه المستخدم بلطف بدل تعليقه.
+  async completeProfile(uid, { name, phone, photoFile }) {
     let photoURL = null;
     let photoUploadFailed = false;
     if (photoFile) {
@@ -816,8 +816,6 @@ const fbApi = {
     const patch = {
       name: String(name || "").trim(), phone, profileComplete: true,
       ...(photoURL ? { photoURL } : {}),
-      ...(vehicle !== undefined ? { vehicle: String(vehicle || "").trim() } : {}),
-      ...(plate !== undefined ? { plate: String(plate || "").trim().toUpperCase() } : {}),
     };
     try { await usersCol.doc(uid).set(patch, { merge: true }); }
     catch (e) { throw new Error(FIRESTORE_SETUP_ERR); }
@@ -1204,7 +1202,7 @@ function DeliveryTimeline({ order, role = "customer", eta, variant = "full" }) {
   const stateOf = (i) => isDone ? "done" : i < curIdx ? "done" : i === curIdx ? "current" : "upcoming";
 
   if (variant === "compact") {
-    const activeLabel = isDone ? "تم التوصيل بنجاح 🎉" : (role==="driver" ? TIMELINE_STEPS[curIdx].dLabel : TIMELINE_STEPS[curIdx].cLabel);
+    const activeLabel = isDone ? "تم التوصيل بنجاح" : (role==="driver" ? TIMELINE_STEPS[curIdx].dLabel : TIMELINE_STEPS[curIdx].cLabel);
     return (
       <div>
         <div className="flex items-center">
@@ -2691,21 +2689,20 @@ function DriverApp({ view, setView, onLogout, onAccountDeleted, currentRole, onS
   const navItems = [
     {id:"dashboard", Icon:Home,    label:t("nav_home")},
     {id:"orders",    Icon:Package, label:t("nav_orders")},
-    {id:"earnings",  Icon:Wallet,  label:t("nav_earnings")},
     {id:"profile",   Icon:User,    label:t("nav_profile")},
   ];
 
   return (
     <div className="min-h-screen bg-white flex flex-col" dir="rtl">
       <div className="flex-1 overflow-auto pb-20 view-transition" key={view}>
-        {view==="dashboard" && <DDash profile={profile} online={online} setOnline={setOnline} setView={setView} orders={orders} pending={pending} activeOrder={activeOrder}/>}
-        {view==="orders"    && <DOrders pending={pending} profile={profile} setView={setView}/>}
-        {view==="active"    && <DActive order={activeOrder} profile={profile} setView={setView} updateOrder={updateOrder}/>}
-        {view==="earnings"  && <DEarnings profile={profile} orders={orders}/>}
-        {view==="profile"   && <DProfile onLogout={onLogout} setView={setView} profile={profile} orders={orders} online={online} setOnline={setOnline}/>}
-        {view==="settings"  && <SettingsScreen setView={setView} backTo="profile" profile={profile} setProfile={setProfile} roleLabel={t("role_driver_title")} currentRole={currentRole} onSwitchRole={onSwitchRole} onAccountDeleted={onAccountDeleted}/>}
+        {view==="dashboard"     && <DDash profile={profile} online={online} setOnline={setOnline} setView={setView} orders={orders} pending={pending} activeOrder={activeOrder}/>}
+        {view==="orders"        && <DOrders pending={pending} profile={profile} setView={setView}/>}
+        {view==="active"        && <DActive order={activeOrder} profile={profile} setView={setView} updateOrder={updateOrder}/>}
+        {view==="profile"       && <DProfile onLogout={onLogout} setView={setView} profile={profile} orders={orders} online={online} setOnline={setOnline}/>}
+        {view==="settings"      && <SettingsScreen setView={setView} backTo="profile" profile={profile} setProfile={setProfile} roleLabel={t("role_driver_title")} currentRole={currentRole} onSwitchRole={onSwitchRole} onAccountDeleted={onAccountDeleted} onLogout={onLogout}/>}
+        {view==="notifications" && <NotificationsScreen setView={setView} backTo="dashboard"/>}
       </div>
-      {["dashboard","orders","earnings","profile"].includes(view) && (
+      {["dashboard","orders","profile"].includes(view) && (
         <nav className="fixed bottom-0 inset-x-0 bg-white border-t flex" style={{borderColor:"var(--bc-d)", maxWidth:480, margin:"0 auto"}}>
           {navItems.map(({id,Icon:Ic,label}) => (
             <button key={id} onClick={()=>setView(id)} aria-label={label} className={`flex-1 min-w-0 flex flex-col items-center py-3 px-1 gap-1 transition-colors ${view===id?"text-gray-950":"text-gray-300"}`}>
@@ -2738,15 +2735,15 @@ function DDash({ profile, online, setOnline, setView, orders, pending, activeOrd
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <NotificationBell variant="dark"/>
+            <NotificationBell variant="dark" onOpen={()=>setView("notifications")}/>
             <button onClick={()=>setOnline(v=>!v)} aria-label={online?"إيقاف الاتصال":"تفعيل الاتصال"} aria-pressed={online}
               className={`relative w-16 h-8 rounded-full flex-shrink-0 transition-colors ${online?"bg-green-500":"bg-gray-700"}`}>
               <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 ${online?"left-9":"left-1"}`}/>
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {[[String(todayDeliveries.length),"رحلات اليوم"],[fmtNum(todayEarnings),"ج.س اليوم"],[(profile.ratingAvg!=null?profile.ratingAvg:5.0).toFixed(1)+" ★","تقييمي"]].map(([v,l])=>(
+        <div className="grid grid-cols-2 gap-2">
+          {[[String(todayDeliveries.length),"رحلات اليوم"],[fmtNum(todayEarnings),"ج.س اليوم"]].map(([v,l])=>(
             <div key={l} className="bg-white/10 rounded-xl p-3 text-center">
               <p className="font-black text-sm">{v}</p>
               <p className="text-xs opacity-50 mt-0.5">{l}</p>
@@ -2770,14 +2767,18 @@ function DDash({ profile, online, setOnline, setView, orders, pending, activeOrd
           </div>
         ) : online ? (
           <div className="bg-green-50 border border-green-100 rounded-2xl p-6 text-center">
-            <div className="text-4xl mb-3">🏍️</div>
+            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+              <Bike size={26} className="text-green-600"/>
+            </div>
             <p className="font-black text-green-900">أنت متاح لاستقبال الطلبات</p>
             <p className="text-green-600 text-sm mt-1 mb-4">{pending.length} طلبات في انتظارك</p>
             <button onClick={()=>setView("orders")} className="bg-gray-950 text-white px-8 py-3 rounded-xl font-black text-sm">عرض الطلبات</button>
           </div>
         ) : (
           <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 text-center">
-            <div className="text-4xl mb-3">😴</div>
+            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+              <ToggleLeft size={26} className="text-gray-400"/>
+            </div>
             <p className="font-black text-gray-600">أنت غير متصل</p>
             <p className="text-gray-400 text-sm mt-1">فعّل التبديل أعلاه لاستقبال الطلبات</p>
           </div>
@@ -2818,7 +2819,7 @@ function DOrders({ pending, profile, setView }) {
   const sorted = useMemo(() => {
     const myLoc = profile.location;
     return pending.map(o => {
-      const distFromMe = myLoc ? haversineKm(myLoc, resolveNeighborhood(o.pickup)) : null;
+      const distFromMe = (myLoc && o.pickupLoc) ? haversineKm(myLoc, o.pickupLoc) : null;
       return { ...o, distFromMe };
     }).sort((a, b) => {
       if (a.distFromMe == null) return 1;
@@ -2933,22 +2934,23 @@ function DActive({ order, profile, setView, updateOrder }) {
   const canAdvance = !hasLiveLocation || (remainingKm != null && remainingKm <= 0.35);
 
   const openNavigation = () => {
-    const dest = toPickup ? resolveNeighborhood(order.pickup) : resolveNeighborhood(order.dropoff);
+    const dest = toPickup ? order.pickupLoc : order.dropoffLoc;
+    if (!dest) return;
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}`, "_blank");
   };
 
   const confirmPickup = async () => {
     try {
       await updateOrder(order.id, { phase: "to_dropoff" });
-      showToast("تم استلام الطلب — توجّه الآن للتسليم 🏍️");
+      showToast("تم استلام الطلب — توجّه الآن للتسليم");
     } catch (e) { showToast("تعذّر تحديث حالة الطلب", "error"); }
   };
 
   const finish = async () => {
     try {
       await updateOrder(order.id, { status: "delivered" });
-      fbApi.pushNotification(order.customerId, "تم توصيل طلبك 🎉", `تم توصيل الطلب ${order.id} بنجاح، لا تنسَ تقييم السائق`).catch(()=>{});
-      showToast("تم تسليم الطلب بنجاح ✅");
+      fbApi.pushNotification(order.customerId, "تم توصيل طلبك", `تم توصيل الطلب ${order.id} بنجاح، لا تنسَ تقييم السائق`).catch(()=>{});
+      showToast("تم تسليم الطلب بنجاح");
       setView("dashboard");
     } catch (e) { showToast("تعذّر تأكيد التسليم", "error"); }
   };
@@ -2985,7 +2987,7 @@ function DActive({ order, profile, setView, updateOrder }) {
                 textAlign:"center",
                 flexShrink:0,
               }}>
-                <p style={{color:"#fff",fontSize:22,fontWeight:900,lineHeight:1}}>{done?"✓":(eta != null ? eta : "…")}</p>
+                <p style={{color:"#fff",fontSize:22,fontWeight:900,lineHeight:1}}>{done? <Check size={20} style={{display:"inline"}}/> :(eta != null ? eta : "…")}</p>
                 <p style={{color:"rgba(255,255,255,.65)",fontSize:10,fontWeight:700}}>{done?"اكتمل":"دقيقة"}</p>
               </div>
             </div>
@@ -3061,7 +3063,7 @@ function DActive({ order, profile, setView, updateOrder }) {
         {done ? (
           <button onClick={finish}
             className="w-full bg-green-600 text-white py-4 rounded-2xl font-black text-base active:scale-95 transition-transform flex items-center justify-center gap-2">
-            ✓ تأكيد إتمام التوصيل
+            <Check size={18}/> تأكيد إتمام التوصيل
           </button>
         ) : (
           <>
@@ -3078,126 +3080,18 @@ function DActive({ order, profile, setView, updateOrder }) {
             </div>
             {toPickup ? (
               <button onClick={confirmPickup} disabled={!canAdvance}
-                className={`w-full py-4 rounded-2xl font-black text-sm active:scale-95 transition-transform ${canAdvance?"bg-gray-950 text-white":"bg-gray-100 text-gray-400"}`}>
-                {canAdvance ? "📦 استلمت الطلب من نقطة الانطلاق" : `${remainingKm!=null?remainingKm.toFixed(1)+" كم متبقية":"جارٍ تحديد الموقع"} — اقترب من نقطة الاستلام`}
+                className={`w-full py-4 rounded-2xl font-black text-sm active:scale-95 transition-transform flex items-center justify-center gap-2 ${canAdvance?"bg-gray-950 text-white":"bg-gray-100 text-gray-400"}`}>
+                {canAdvance ? <><Package size={16}/> استلمت الطلب من نقطة الانطلاق</> : `${remainingKm!=null?remainingKm.toFixed(1)+" كم متبقية":"جارٍ تحديد الموقع"} — اقترب من نقطة الاستلام`}
               </button>
             ) : (
               <button onClick={finish} disabled={!canAdvance}
-                className={`w-full py-4 rounded-2xl font-black text-sm active:scale-95 transition-transform ${canAdvance?"bg-green-500 text-white":"bg-gray-100 text-gray-400"}`}>
-                {canAdvance ? "✅ تأكيد التسليم" : `${remainingKm!=null?remainingKm.toFixed(1)+" كم متبقية":"جارٍ تحديد الموقع"} — اقترب من الوجهة`}
+                className={`w-full py-4 rounded-2xl font-black text-sm active:scale-95 transition-transform flex items-center justify-center gap-2 ${canAdvance?"bg-green-500 text-white":"bg-gray-100 text-gray-400"}`}>
+                {canAdvance ? <><CheckCircle size={16}/> تأكيد التسليم</> : `${remainingKm!=null?remainingKm.toFixed(1)+" كم متبقية":"جارٍ تحديد الموقع"} — اقترب من الوجهة`}
               </button>
             )}
           </>
         )}
       </div>
-    </div>
-  );
-}
-
-function DEarnings({ profile, orders }) {
-  const { showToast } = useApp();
-  const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [withdrawals, setWithdrawals] = useLocalStorageState(LS_WITHDRAWALS, []);
-  const [destination, setDestination] = useState("bankak");
-
-  const mine = orders.filter(o => o.driverId === profile.id && o.status === "delivered");
-  const s = driverStats(profile.id, orders);
-
-  const dayLabels = ["أحد","اثن","ثلا","أرب","خمس","جمع","سبت"];
-  const weekTotals = [0,0,0,0,0,0,0];
-  mine.forEach(o => { const day = new Date(o.date + "T00:00:00").getDay(); weekTotals[day] += o.price; });
-  const todayIdx = new Date(todayISO() + "T00:00:00").getDay();
-  const weekSum = weekTotals.reduce((a,b)=>a+b,0);
-  const todaySum = mine.filter(o=>o.date===todayISO()).reduce((a,o)=>a+o.price,0);
-
-  const myWithdrawals = withdrawals.filter(w => w.driverId === profile.id);
-  const totalWithdrawn = myWithdrawals.reduce((sum,w)=>sum+w.amount,0);
-  const available = Math.max(s.earnings - totalWithdrawn, 0);
-
-  const confirmWithdraw = () => {
-    const w = { id:"WD-"+Date.now().toString().slice(-6), driverId: profile.id, amount: available, destination, date: todayISO() };
-    setWithdrawals(ws => [w, ...ws]);
-    setWithdrawOpen(false);
-    showToast(`تم إرسال طلب سحب ${fmtNum(available)} ج.س بنجاح`);
-  };
-
-  return (
-    <div>
-      <div className="bg-gray-950 text-white p-5 pt-14">
-        <h2 className="text-xl font-black">أرباحي</h2>
-        <div className="mt-4">
-          <p className="text-4xl font-black">{fmtNum(weekSum)}</p>
-          <p className="text-gray-400 text-sm mt-0.5">جنيه سوداني هذا الأسبوع</p>
-        </div>
-      </div>
-      <div className="p-5 space-y-4">
-        <div className="bg-white border rounded-2xl p-5" style={{borderColor:"var(--bc-a)"}}>
-          <p className="text-gray-400 text-xs mb-1">الرصيد المتاح للسحب</p>
-          <p className="text-3xl font-black text-gray-950 mb-4">{fmtNum(available)} ج.س</p>
-          <button onClick={()=>setWithdrawOpen(true)} disabled={available<=0}
-            className="w-full bg-gray-950 text-white py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2">
-            <ArrowDownCircle size={16}/> طلب سحب الأرباح
-          </button>
-        </div>
-        <div className="bg-white border rounded-2xl p-5" style={{borderColor:"var(--bc-a)"}}>
-          <p className="font-black text-gray-950 mb-4">الأرباح اليومية</p>
-          <MiniBarChart labels={dayLabels} values={weekTotals} highlightIndex={todayIdx}/>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[["إجمالي الأرباح",`${fmtNum(s.earnings)} ج.س`],["هذا الأسبوع",`${fmtNum(weekSum)} ج.س`],["اليوم",`${fmtNum(todaySum)} ج.س`],["تقييمي",`${(profile.ratingAvg!=null?profile.ratingAvg:5.0).toFixed(1)} ★`]].map(([l,v])=>(
-            <div key={l} className="bg-gray-50 rounded-2xl p-4">
-              <p className="text-gray-400 text-xs mb-1">{l}</p>
-              <p className="font-black text-gray-950">{v}</p>
-            </div>
-          ))}
-        </div>
-        <div className="bg-white border rounded-2xl p-4" style={{borderColor:"var(--bc-a)"}}>
-          <p className="font-black text-gray-950 mb-3">إجمالي الرحلات</p>
-          {[["رحلات اليوم", mine.filter(o=>o.date===todayISO()).length],["إجمالي الرحلات", s.deliveries]].map(([l,v])=>(
-            <div key={l} className="flex justify-between py-2.5 border-b last:border-0 text-sm" style={{borderColor:"var(--bc-c)"}}>
-              <span className="text-gray-500">{l}</span>
-              <span className="font-black text-gray-950">{v}</span>
-            </div>
-          ))}
-        </div>
-        <div className="bg-white border rounded-2xl overflow-hidden" style={{borderColor:"var(--bc-a)"}}>
-          <div className="px-5 py-4 border-b" style={{borderColor:"var(--bc-c)"}}><p className="font-black text-gray-950">آخر التوصيلات</p></div>
-          {mine.length === 0 ? (
-            <p className="text-gray-300 text-sm text-center py-8">لا توجد توصيلات مكتملة بعد</p>
-          ) : mine.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).slice(0,6).map((o,i,arr)=>(
-            <div key={o.id} className={`px-5 py-4 flex items-center justify-between gap-2 ${i<arr.length-1?"border-b":""}`} style={{borderColor:"var(--bc-e)"}}>
-              <div className="min-w-0">
-                <p className="font-bold text-gray-950 text-sm truncate">{o.pickup} ← {o.dropoff}</p>
-                <p className="text-gray-400 text-xs">{o.date} • {o.time}</p>
-              </div>
-              <span className="font-black text-gray-950 text-sm flex-shrink-0">+{o.price} ج.س</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      {withdrawOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4 sm:items-center sm:pb-0" style={{background:"rgba(10,10,10,0.55)"}} onClick={()=>setWithdrawOpen(false)}>
-          <div className="w-full bg-white rounded-3xl p-5" style={{maxWidth:420}} onClick={e=>e.stopPropagation()}>
-            <h3 className="font-black text-gray-950 mb-4">طلب سحب الأرباح</h3>
-            <p className="text-gray-400 text-sm mb-1">المبلغ المتاح</p>
-            <p className="text-2xl font-black text-gray-950 mb-4">{fmtNum(available)} ج.س</p>
-            <p className="text-sm font-bold text-gray-700 mb-2">وجهة التحويل</p>
-            <div className="space-y-2 mb-5">
-              {[["bankak","بنكك (Bankak)"],["bank","حساب بنكي"]].map(([id,label])=>(
-                <button key={id} onClick={()=>setDestination(id)}
-                  className={`w-full p-3.5 rounded-xl border-2 text-right font-bold text-sm ${destination===id?"border-gray-950 bg-gray-50":"bg-white"}`}
-                  style={destination!==id?{borderColor:"var(--bc-b)"}:{}}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={()=>setWithdrawOpen(false)} className="py-3.5 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm">إلغاء</button>
-              <button onClick={confirmWithdraw} className="py-3.5 rounded-xl bg-gray-950 text-white font-bold text-sm">تأكيد السحب</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -3217,11 +3111,6 @@ function DProfile({ onLogout, setView, profile, orders, online, setOnline }) {
         )}
         <h2 className="text-xl font-black">{profile.name}</h2>
         <p className="text-gray-500 text-sm" dir="ltr">{profile.phone}</p>
-        <div className="flex justify-center items-center gap-1 mt-2">
-          <Star size={14} className="text-amber-400 fill-amber-400"/>
-          <span className="text-amber-400 font-black">{(profile.ratingAvg!=null?profile.ratingAvg:5.0).toFixed(1)}</span>
-          <span className="text-gray-500 text-sm">({s.deliveries} رحلة)</span>
-        </div>
       </div>
       <div className="p-5 space-y-3">
         <div className="bg-white border rounded-xl p-4 flex items-center justify-between gap-2" style={{borderColor:"var(--bc-a)"}}>
@@ -3229,7 +3118,7 @@ function DProfile({ onLogout, setView, profile, orders, online, setOnline }) {
             <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><Bike size={17} className="text-gray-700"/></div>
             <div className="min-w-0">
               <span className="font-bold text-gray-950 block">{online?"متصل":"غير متصل"}</span>
-              <span className="text-gray-400 text-xs truncate block">{profile.vehicle} • {profile.plate}</span>
+              <span className="text-gray-400 text-xs truncate block">{s.deliveries} توصيلة مكتملة</span>
             </div>
           </div>
           <button onClick={()=>setOnline(v=>!v)} aria-label={online?"إيقاف الاتصال":"تفعيل الاتصال"} aria-pressed={online}
@@ -3237,16 +3126,11 @@ function DProfile({ onLogout, setView, profile, orders, online, setOnline }) {
             <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${online?"left-6":"left-0.5"}`}/>
           </button>
         </div>
-        {[{Icon:Wallet,l:"أرباحي الإجمالية",s:`${fmtNum(s.earnings)} ج.س`, go:"earnings"},
-          {Icon:Package,l:"إجمالي الرحلات",s:`${s.deliveries} رحلة`, go:"earnings"},
-          {Icon:Settings,l:"الإعدادات",s:"", go:"settings"}].map(({Icon:Ic,l,s:sub,go})=>(
-          <button key={l} onClick={()=>setView(go)} className="w-full bg-white border rounded-xl p-4 flex items-center gap-3" style={{borderColor:"var(--bc-a)"}}>
-            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><Ic size={17} className="text-gray-700"/></div>
-            <span className="font-bold text-gray-950 flex-1 min-w-0 truncate text-right">{l}</span>
-            {sub && <span className="text-gray-500 font-bold text-sm flex-shrink-0 whitespace-nowrap">{sub}</span>}
-            <ChevronRight size={15} className="text-gray-300 flex-shrink-0" style={{transform:"scaleX(-1)"}}/>
-          </button>
-        ))}
+        <button onClick={()=>setView("settings")} className="w-full bg-white border rounded-xl p-4 flex items-center gap-3" style={{borderColor:"var(--bc-a)"}}>
+          <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><Settings size={17} className="text-gray-700"/></div>
+          <span className="font-bold text-gray-950 flex-1 min-w-0 truncate text-right">الإعدادات</span>
+          <ChevronRight size={15} className="text-gray-300 flex-shrink-0" style={{transform:"scaleX(-1)"}}/>
+        </button>
         <button onClick={()=>setConfirmLogout(true)} className="w-full bg-red-50 border border-red-100 rounded-xl p-4 flex items-center gap-3">
           <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0"><LogOut size={17} className="text-red-500"/></div>
           <span className="font-bold text-red-600 flex-1 min-w-0 truncate text-right">تسجيل الخروج</span>
@@ -3327,12 +3211,16 @@ function ChangePasswordModal({ open, onClose, profile }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNext, setShowNext] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
   useScrollLock(open);
   if (!open) return null;
 
-  const reset = () => { setCurrent(""); setNext(""); setConfirm(""); setErrors({}); };
+  const reset = () => { setCurrent(""); setNext(""); setConfirm(""); setErrors({}); setShowCurrent(false); setShowNext(false); setShowConfirm(false); };
   const close = () => { if (loading) return; reset(); onClose(); };
 
   const submit = async () => {
@@ -3340,9 +3228,10 @@ function ChangePasswordModal({ open, onClose, profile }) {
     if (!current) errs.current = "أدخل كلمة المرور الحالية";
     if (!next) errs.next = "أدخل كلمة مرور جديدة";
     else if (next.length < 6) errs.next = "6 أحرف على الأقل";
+    else if (getPasswordStrength(next).score < 2) errs.next = "كلمة مرور ضعيفة — أضِف أرقاماً أو رموزاً أو أحرفاً كبيرة";
     if (confirm !== next) errs.confirm = "كلمتا المرور غير متطابقتين";
     setErrors(errs);
-    if (Object.keys(errs).length) return;
+    if (Object.keys(errs).length) { setShakeKey(k=>k+1); return; }
     setLoading(true);
     try {
       await fbApi.changePassword(profile.id, profile.authEmail, current, next);
@@ -3351,6 +3240,7 @@ function ChangePasswordModal({ open, onClose, profile }) {
       onClose();
     } catch (e) {
       setErrors({ current: e.message || "تعذّر تغيير كلمة المرور" });
+      setShakeKey(k=>k+1);
     } finally {
       setLoading(false);
     }
@@ -3361,19 +3251,34 @@ function ChangePasswordModal({ open, onClose, profile }) {
       <div className="w-full bg-white rounded-3xl p-6" style={{maxWidth:420}} onClick={e=>e.stopPropagation()}>
         <h3 className="font-black text-lg text-gray-950 mb-4">تغيير كلمة المرور</h3>
         <div className="space-y-3">
-          <div>
-            <input type="password" value={current} onChange={e=>setCurrent(e.target.value)} placeholder="كلمة المرور الحالية" dir="ltr" aria-label="كلمة المرور الحالية"
-              className="w-full border-2 rounded-xl px-4 py-3 text-gray-900 focus:outline-none transition-colors" style={{borderColor: errors.current ? "#EF4444" : "var(--bc-b)"}}/>
+          <div key={errors.current?`c-${shakeKey}`:"c"} className={errors.current?"moter-shake":""}>
+            <div className="relative">
+              <input type={showCurrent?"text":"password"} value={current} onChange={e=>setCurrent(e.target.value)} placeholder="كلمة المرور الحالية" dir="ltr" aria-label="كلمة المرور الحالية"
+                className="w-full border-2 rounded-xl pl-4 pr-12 py-3 text-gray-900 focus:outline-none transition-colors" style={{borderColor: errors.current ? "#EF4444" : "var(--bc-b)"}}/>
+              <button type="button" onClick={()=>setShowCurrent(v=>!v)} aria-label={showCurrent?"إخفاء كلمة المرور":"إظهار كلمة المرور"} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                {showCurrent ? <EyeOff size={17}/> : <Eye size={17}/>}
+              </button>
+            </div>
             {errors.current && <p className="moter-field-error"><AlertCircle size={13}/> {errors.current}</p>}
           </div>
-          <div>
-            <input type="password" value={next} onChange={e=>setNext(e.target.value)} placeholder="كلمة المرور الجديدة" dir="ltr" aria-label="كلمة المرور الجديدة"
-              className="w-full border-2 rounded-xl px-4 py-3 text-gray-900 focus:outline-none transition-colors" style={{borderColor: errors.next ? "#EF4444" : "var(--bc-b)"}}/>
-            {errors.next && <p className="moter-field-error"><AlertCircle size={13}/> {errors.next}</p>}
+          <div key={errors.next?`n-${shakeKey}`:"n"} className={errors.next?"moter-shake":""}>
+            <div className="relative">
+              <input type={showNext?"text":"password"} value={next} onChange={e=>setNext(e.target.value)} placeholder="كلمة المرور الجديدة" dir="ltr" aria-label="كلمة المرور الجديدة"
+                className="w-full border-2 rounded-xl pl-4 pr-12 py-3 text-gray-900 focus:outline-none transition-colors" style={{borderColor: errors.next ? "#EF4444" : "var(--bc-b)"}}/>
+              <button type="button" onClick={()=>setShowNext(v=>!v)} aria-label={showNext?"إخفاء كلمة المرور":"إظهار كلمة المرور"} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                {showNext ? <EyeOff size={17}/> : <Eye size={17}/>}
+              </button>
+            </div>
+            {errors.next ? <p className="moter-field-error"><AlertCircle size={13}/> {errors.next}</p> : <PasswordStrengthMeter password={next}/>}
           </div>
-          <div>
-            <input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="تأكيد كلمة المرور الجديدة" dir="ltr" aria-label="تأكيد كلمة المرور الجديدة"
-              className="w-full border-2 rounded-xl px-4 py-3 text-gray-900 focus:outline-none transition-colors" style={{borderColor: errors.confirm ? "#EF4444" : "var(--bc-b)"}}/>
+          <div key={errors.confirm?`cf-${shakeKey}`:"cf"} className={errors.confirm?"moter-shake":""}>
+            <div className="relative">
+              <input type={showConfirm?"text":"password"} value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="تأكيد كلمة المرور الجديدة" dir="ltr" aria-label="تأكيد كلمة المرور الجديدة"
+                className="w-full border-2 rounded-xl pl-4 pr-12 py-3 text-gray-900 focus:outline-none transition-colors" style={{borderColor: errors.confirm ? "#EF4444" : "var(--bc-b)"}}/>
+              <button type="button" onClick={()=>setShowConfirm(v=>!v)} aria-label={showConfirm?"إخفاء كلمة المرور":"إظهار كلمة المرور"} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                {showConfirm ? <EyeOff size={17}/> : <Eye size={17}/>}
+              </button>
+            </div>
             {errors.confirm && <p className="moter-field-error"><AlertCircle size={13}/> {errors.confirm}</p>}
           </div>
         </div>
@@ -3388,7 +3293,7 @@ function ChangePasswordModal({ open, onClose, profile }) {
   );
 }
 
-function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, currentRole, onSwitchRole, onAccountDeleted }) {
+function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, currentRole, onSwitchRole, onAccountDeleted, onLogout }) {
   const { darkMode, setDarkMode, t, showToast } = useApp();
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(profile.photoURL);
@@ -3400,7 +3305,10 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
   const [saveError, setSaveError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [changePassOpen, setChangePassOpen] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
   const inputId = "settingsPhotoInput_" + roleLabel;
 
   const dirty = fullName.trim() !== profile.name || toSudanE164(localPhone) !== profile.phone
@@ -3424,6 +3332,7 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
     if (!phoneDigits) errs.phone = t("err_phone_required");
     else if (phoneDigits.length !== 9) errs.phone = t("err_phone_invalid");
     setErrors(errs);
+    if (Object.keys(errs).length) setShakeKey(k=>k+1);
     return Object.keys(errs).length === 0;
   };
 
@@ -3439,6 +3348,7 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
       showToast(t("saved_success"));
     } catch (e) {
       setSaveError(e.message || "تعذّر حفظ التغييرات، حاول مرة أخرى");
+      setShakeKey(k=>k+1);
     } finally {
       setSaving(false);
     }
@@ -3454,6 +3364,8 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
       setDeleting(false);
     }
   };
+
+  const doLogout = async () => { setLoggingOut(true); await onLogout(); };
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -3475,7 +3387,7 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
               <div className="w-24 h-24 bg-gray-950 text-white rounded-3xl flex items-center justify-center text-3xl font-black">{fullName[0] || "?"}</div>
             )}
             <label htmlFor={inputId} className="absolute -bottom-1 -left-1 w-8 h-8 bg-white border-2 rounded-full flex items-center justify-center cursor-pointer active:scale-90 transition-transform" style={{borderColor:"var(--bc-a)"}}>
-              <Settings size={14} className="text-gray-700"/>
+              <Camera size={14} className="text-gray-700"/>
             </label>
             <input id={inputId} type="file" accept="image/*" onChange={handlePhoto} className="hidden" aria-label="تغيير الصورة الشخصية"/>
           </div>
@@ -3486,13 +3398,15 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
         <div className="bg-white border rounded-2xl p-5" style={{borderColor:"var(--bc-a)"}}>
           <h3 className="font-black text-gray-950 mb-4">{t("personal_info")}</h3>
           <div className="space-y-4">
-            <div>
+            <div key={errors.name?`n-${shakeKey}`:"n"} className={errors.name?"moter-shake":""}>
               <label className="text-sm font-semibold text-gray-700 block mb-2">{t("full_name")}</label>
               <input value={fullName} onChange={e=>setFullName(e.target.value)} aria-invalid={!!errors.name} aria-label={t("full_name")}
                 className="w-full border-2 rounded-xl px-4 py-3 text-gray-950 font-bold focus:outline-none focus:border-gray-950 transition-colors" style={{borderColor: errors.name ? "#EF4444" : "var(--bc-b)"}}/>
               {errors.name && <p className="moter-field-error"><AlertCircle size={13}/> {errors.name}</p>}
             </div>
-            <SudanPhoneField value={localPhone} onChange={setLocalPhone} error={errors.phone} label={t("phone_number")}/>
+            <div key={errors.phone?`p-${shakeKey}`:"p"} className={errors.phone?"moter-shake":""}>
+              <SudanPhoneField value={localPhone} onChange={setLocalPhone} error={errors.phone} label={t("phone_number")}/>
+            </div>
           </div>
         </div>
 
@@ -3522,20 +3436,26 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
         {/* تبديل الحساب */}
         <RoleSwitcher current={currentRole} onSwitch={onSwitchRole}/>
 
-        {/* إجراءات الحساب */}
+        {/* إجراءات الحساب — تسجيل الخروج وحذف الحساب دوماً مع بعض، بغض النظر عن طريقة الدخول */}
         <div className="bg-white border rounded-2xl overflow-hidden" style={{borderColor:"var(--bc-a)"}}>
-          {profile.authMethod === "username" ? (
+          {profile.authMethod === "username" && (
             <button onClick={()=>setChangePassOpen(true)} className="w-full p-4 flex items-center gap-3 border-b active:bg-gray-50" style={{borderColor:"var(--bc-c)"}}>
               <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><Shield size={17} className="text-gray-700"/></div>
               <span className="font-bold text-gray-950 flex-1 min-w-0 truncate text-right text-sm">تغيير كلمة المرور</span>
               <ChevronRight size={15} className="text-gray-300 flex-shrink-0" style={{transform:"scaleX(-1)"}}/>
             </button>
-          ) : (
+          )}
+          {profile.authMethod !== "username" && (
             <div className="w-full p-4 flex items-center gap-3 border-b" style={{borderColor:"var(--bc-c)"}}>
               <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><GoogleLogo size={17}/></div>
               <span className="font-bold text-gray-500 flex-1 min-w-0 truncate text-right text-sm">تسجيل الدخول متصل بحساب Google</span>
             </div>
           )}
+          <button onClick={()=>setConfirmLogout(true)} className="w-full p-4 flex items-center gap-3 border-b active:bg-gray-50" style={{borderColor:"var(--bc-c)"}}>
+            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0"><LogOut size={17} className="text-gray-700"/></div>
+            <span className="font-bold text-gray-950 flex-1 min-w-0 truncate text-right text-sm">تسجيل الخروج</span>
+            <ChevronRight size={15} className="text-gray-300 flex-shrink-0" style={{transform:"scaleX(-1)"}}/>
+          </button>
           <button onClick={()=>setConfirmDelete(true)} className="w-full p-4 flex items-center gap-3 active:bg-red-50">
             <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0"><AlertCircle size={17} className="text-red-500"/></div>
             <span className="font-bold text-red-600 flex-1 min-w-0 truncate text-right text-sm">حذف الحساب</span>
@@ -3551,6 +3471,17 @@ function SettingsScreen({ setView, backTo, profile, setProfile, roleLabel, curre
       </div>
 
       <ChangePasswordModal open={changePassOpen} onClose={()=>setChangePassOpen(false)} profile={profile}/>
+      <ConfirmModal
+        open={confirmLogout}
+        danger
+        loading={loggingOut}
+        loadingLabel="جارٍ تسجيل الخروج..."
+        title="تسجيل الخروج"
+        message="هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟"
+        confirmLabel="تسجيل الخروج"
+        onConfirm={doLogout}
+        onCancel={()=>setConfirmLogout(false)}
+      />
       <ConfirmModal
         open={confirmDelete}
         danger
