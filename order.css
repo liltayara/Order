@@ -1,0 +1,218 @@
+  html { scrollbar-gutter: stable; }
+  html, body { font-family:'Cairo', sans-serif; background:#fff; overscroll-behavior-y: none; }
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  .scrollbar-hide::-webkit-scrollbar { display:none; }
+  .scrollbar-hide { -ms-overflow-style:none; scrollbar-width:none; }
+  #root { max-width: 480px; margin: 0 auto; min-height: 100vh; box-shadow: 0 0 60px rgba(0,0,0,0.06); overflow-x: hidden; position: relative; }
+  input, textarea, button { font-family:'Cairo', sans-serif; }
+
+  /* ── معايير احترافية موحّدة لكل الأزرار (إدارة / عميل / سائق) ── */
+  button { transition: transform .15s ease, opacity .15s ease, background-color .15s ease, box-shadow .15s ease; -webkit-user-select: none; user-select: none; }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+  button:focus-visible { outline: 2px solid rgba(10,10,10,.45); outline-offset: 2px; }
+
+  /* ── منع خروج أي نص عن حدود الشاشة أو الحقول ── */
+  body, #root, main, header, nav, div, p, span, h1, h2, h3 { min-width: 0; }
+  p, span, h1, h2, h3 { overflow-wrap: anywhere; word-break: break-word; }
+  input, textarea { min-width: 0; max-width: 100%; }
+
+  /* ── متغيرات الحدود (تتبدّل تلقائياً مع الوضع الليلي) ── */
+  :root{
+    --bc-a:#EFEFEF; --bc-b:#E8E8E8; --bc-c:#F5F5F5; --bc-d:#F0F0F0; --bc-e:#F8F8F8;
+    --ink:#0A0A0A; --app-bg:#FAFAFA;
+  }
+  [data-theme="dark"]{
+    --bc-a:#2A2A2E; --bc-b:#323236; --bc-c:#242428; --bc-d:#242428; --bc-e:#242428;
+    --ink:#FAFAFA; --app-bg:#0A0A0A; color-scheme: dark;
+  }
+
+  /* ── الوضع الليلي: تعطيل ألوان Tailwind الفاتحة تلقائياً عبر كل الشاشات ── */
+  [data-theme="dark"] body { background:#0A0A0A; }
+  [data-theme="dark"] #root { background:#0A0A0A; box-shadow: 0 0 60px rgba(0,0,0,0.4); }
+  [data-theme="dark"] .bg-white { background-color:#151517 !important; }
+  [data-theme="dark"] .bg-gray-50 { background-color:#1C1C1F !important; }
+  [data-theme="dark"] .bg-gray-100 { background-color:#242428 !important; }
+  [data-theme="dark"] .bg-gray-150 { background-color:#2A2A2E !important; }
+  [data-theme="dark"] .bg-gray-200 { background-color:#323236 !important; }
+  [data-theme="dark"] .text-gray-950 { color:#FAFAFA !important; }
+  [data-theme="dark"] .text-gray-900 { color:#F4F4F5 !important; }
+  [data-theme="dark"] .text-gray-700 { color:#D4D4D8 !important; }
+  [data-theme="dark"] .text-gray-600 { color:#B8B8BF !important; }
+  [data-theme="dark"] .text-gray-500 { color:#9A9AA2 !important; }
+  [data-theme="dark"] .text-gray-400 { color:#78787F !important; }
+  [data-theme="dark"] .text-gray-300 { color:#57575D !important; }
+  [data-theme="dark"] .border, [data-theme="dark"] .border-2, [data-theme="dark"] .border-t,
+  [data-theme="dark"] .border-b, [data-theme="dark"] .border-y { border-color:#26262A; }
+  [data-theme="dark"] .bg-green-50 { background-color:rgba(34,197,94,0.12) !important; }
+  [data-theme="dark"] .bg-blue-50 { background-color:rgba(59,130,246,0.12) !important; }
+  [data-theme="dark"] .bg-red-50 { background-color:rgba(239,68,68,0.12) !important; }
+  [data-theme="dark"] .bg-amber-50 { background-color:rgba(245,158,11,0.12) !important; }
+  [data-theme="dark"] .border-green-100 { border-color:rgba(34,197,94,0.25) !important; }
+  [data-theme="dark"] .border-blue-100 { border-color:rgba(59,130,246,0.25) !important; }
+  [data-theme="dark"] .border-red-100 { border-color:rgba(239,68,68,0.25) !important; }
+  [data-theme="dark"] .text-green-700, [data-theme="dark"] .text-green-800, [data-theme="dark"] .text-green-900,
+  [data-theme="dark"] .text-green-600 { color:#4ADE80 !important; }
+  [data-theme="dark"] .text-blue-900, [data-theme="dark"] .text-blue-600, [data-theme="dark"] .text-blue-500 { color:#60A5FA !important; }
+  [data-theme="dark"] .text-red-600, [data-theme="dark"] .text-red-800, [data-theme="dark"] .text-red-500 { color:#F87171 !important; }
+  [data-theme="dark"] .text-amber-700 { color:#FBBF24 !important; }
+  [data-theme="dark"] input, [data-theme="dark"] textarea { background:transparent; color:#FAFAFA; }
+  [data-theme="dark"] input::placeholder, [data-theme="dark"] textarea::placeholder { color:#54545A; }
+  [data-theme="dark"] .placeholder-gray-300::placeholder { color:#54545A !important; }
+
+  /* ── سبلاش الشاشة الأولية ── */
+  @keyframes moterPop { 0%{transform:scale(.7);opacity:0} 60%{transform:scale(1.06);opacity:1} 100%{transform:scale(1)} }
+  @keyframes moterBreathe { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.045); } }
+  /* الشاشة تبقى ظاهرة بالكامل طالما التطبيق غير جاهز فعلياً، وتُخفى فقط عبر
+     transition فور الجاهزية — لا وميض شاشة فارغة "معلَّقة" بعد أن يخفت التصميم
+     الزمني القديم بينما التحقق من الجلسة ما زال جارياً. */
+  .moter-splash { position:fixed; inset:0; z-index:100; background:#0A0A0A; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; opacity:1; transition:opacity .38s ease; }
+  .moter-splash-exit { opacity:0; pointer-events:none; }
+  .moter-splash-icon { animation:moterPop .6s ease; }
+  .moter-splash-icon-idle { animation:moterPop .6s ease, moterBreathe 1.7s ease-in-out .6s infinite; }
+
+  /* ── مؤشر تحميل دوّار ── */
+  @keyframes moterSpin { to { transform:rotate(360deg); } }
+  .moter-spinner { display:inline-block; width:1em; height:1em; border:2.5px solid rgba(255,255,255,.35);
+    border-top-color:#fff; border-radius:50%; animation:moterSpin .7s linear infinite; }
+  .moter-spinner-dark { border:2.5px solid rgba(10,10,10,.2); border-top-color:#0A0A0A; }
+
+  /* ── تنبيه خطأ التحقق من الحقول ── */
+  .moter-field-error { color:#EF4444; font-size:12px; font-weight:700; margin-top:6px; display:flex; align-items:center; gap:4px; }
+  [data-theme="dark"] .moter-field-error { color:#F87171; }
+
+  /* ── نظام تتبّع الطلب بالخط الزمني (Timeline) — نبضة الخطوة الحالية ── */
+  @keyframes moterTlPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(10,10,10,.16); } 50%{ box-shadow:0 0 0 7px rgba(10,10,10,0); } }
+  .moter-tl-pulse { animation: moterTlPulse 1.8s ease-in-out infinite; }
+  [data-theme="dark"] .moter-tl-pulse { animation-name: moterTlPulseDark; }
+  @keyframes moterTlPulseDark { 0%,100%{ box-shadow:0 0 0 0 rgba(250,250,250,.14); } 50%{ box-shadow:0 0 0 7px rgba(250,250,250,0); } }
+
+  /* ── تنبيهات Toast خفيفة ── */
+  @keyframes moterToastIn { 0%{ transform:translateY(14px) scale(.96); opacity:0; } 100%{ transform:translateY(0) scale(1); opacity:1; } }
+  .moter-toast { animation: moterToastIn .28s cubic-bezier(.2,.8,.3,1); }
+  /* ── خريطة التتبع الحي ── */
+  .moter-map-wrap { border-radius:16px; overflow:hidden; position:relative; background:#E8E8E8; }
+  .moter-map-wrap .leaflet-container { font-family:'Cairo',sans-serif; direction:ltr; }
+  .moter-map-wrap .leaflet-control-zoom { margin:8px !important; }
+  .moter-map-wrap .leaflet-control-zoom a { width:28px !important; height:28px !important; line-height:28px !important; font-size:14px !important; border-radius:8px !important; border:none !important; box-shadow:0 2px 8px rgba(0,0,0,.18) !important; }
+  .moter-map-badge { position:absolute; top:8px; right:8px; z-index:400; background:rgba(10,10,10,.82); color:#fff; font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; backdrop-filter:blur(6px); pointer-events:none; display:flex; align-items:center; gap:6px; }
+
+  /* دبّوس السائق — متحرّك دوماً، مع سهم اتجاه ناعم الدوران حين تتوفر بيانة heading حقيقية من GPS */
+  .moter-driver-pin { width:40px; height:40px; background:#0A0A0A; border:3px solid #fff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 16px rgba(0,0,0,.5); }
+  .moter-heading-arrow { transition: transform .5s cubic-bezier(.4,0,.2,1); transform-origin:center; }
+
+  /* دبّوس ثانوي مكتوم — للنقطة غير النشطة حالياً (استُلمت بالفعل، أو لم يحن دورها بعد) */
+  .moter-pin-muted { width:13px; height:13px; background:#fff; border:2.5px solid #9A9AA2; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+
+  /* دبّوس العميل — ثابت دوماً وأحمر دائماً، هو الوجهة الحالية التي يتجه إليها السائق */
+  .moter-pin-active { width:28px; height:38px; position:relative; }
+  .moter-pin-active::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:24px; height:24px; background:#DC2626; border:3px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(220,38,38,.5); }
+  .moter-pin-active::after { content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-top:14px solid #DC2626; }
+
+  /* دبّوس مثبَّت بمنتصف شاشة اختيار الموقع — الخريطة تتحرك تحته، لا هو */
+  .moter-picker-pin { position:absolute; top:50%; left:50%; transform:translate(-50%,-100%); z-index:500; pointer-events:none; filter:drop-shadow(0 8px 14px rgba(0,0,0,.45)); }
+  @keyframes moterPinHover { 0%,100%{ transform:translate(-50%,-100%); } 50%{ transform:translate(-50%,calc(-100% - 5px)); } }
+  .moter-picker-pin-idle { animation: moterPinHover 1.6s ease-in-out infinite; }
+
+  /* اهتزاز الحقل عند فشل التحقق — إشارة واضحة لكن غير مزعجة */
+  @keyframes moterShake { 10%,90%{transform:translateX(-1px);} 20%,80%{transform:translateX(2px);} 30%,50%,70%{transform:translateX(-4px);} 40%,60%{transform:translateX(4px);} }
+  .moter-shake { animation: moterShake .4s cubic-bezier(.36,.07,.19,.97) both; }
+
+  /* شريط قوة كلمة المرور */
+  .moter-strength-track { height:4px; border-radius:3px; background:var(--bc-b); overflow:hidden; }
+  .moter-strength-fill { height:100%; border-radius:3px; transition: width .3s var(--ease-premium, ease), background-color .3s; }
+
+  /* ── هياكل تحميل (Skeleton) ── */
+  @keyframes moterShimmer { 0%{ background-position:-200% 0; } 100%{ background-position:200% 0; } }
+  .moter-skeleton { background:linear-gradient(90deg, #EDEDED 25%, #F6F6F6 37%, #EDEDED 63%); background-size:400% 100%;
+    animation:moterShimmer 1.4s ease infinite; border-radius:12px; }
+  [data-theme="dark"] .moter-skeleton { background:linear-gradient(90deg, #242428 25%, #2C2C30 37%, #242428 63%); background-size:400% 100%; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     REFINEMENT PASS — same neutral palette, elevated precision.
+     Pure additions: new tokens + selectors on existing class combos.
+     Nothing below overrides component logic or removes a rule above.
+  ══════════════════════════════════════════════════════════════════ */
+
+  :root{
+    --ease-premium: cubic-bezier(.16,1,.3,1);
+    --shadow-xs:    0 1px 2px rgba(10,10,10,.05);
+    --shadow-card:      0 1px 2px rgba(10,10,10,.04), 0 10px 26px -14px rgba(10,10,10,.14);
+    --shadow-card-hover:0 1px 2px rgba(10,10,10,.05), 0 16px 36px -14px rgba(10,10,10,.20);
+    --shadow-float: 0 4px 10px rgba(10,10,10,.10), 0 26px 50px -16px rgba(10,10,10,.26);
+    --shadow-btn:       0 1px 2px rgba(10,10,10,.08), 0 8px 18px -7px rgba(10,10,10,.32);
+    --grad-ink: linear-gradient(180deg, #17181D 0%, #0A0A0A 100%);
+  }
+  [data-theme="dark"]{
+    --shadow-xs:    0 1px 2px rgba(0,0,0,.35);
+    --shadow-card:      0 1px 2px rgba(0,0,0,.3), 0 10px 26px -14px rgba(0,0,0,.55);
+    --shadow-card-hover:0 1px 2px rgba(0,0,0,.3), 0 16px 36px -14px rgba(0,0,0,.6);
+    --shadow-float: 0 4px 10px rgba(0,0,0,.45), 0 28px 54px -16px rgba(0,0,0,.75);
+    --shadow-btn:       0 1px 2px rgba(0,0,0,.3), 0 10px 22px -7px rgba(0,0,0,.55);
+    --grad-ink: linear-gradient(180deg, #1E1F24 0%, #0E0E10 100%);
+  }
+
+  /* every white card/panel gets real, soft elevation instead of a flat border */
+  .bg-white.border.rounded-2xl, .bg-white.border.rounded-3xl,
+  .bg-white.rounded-2xl.border, .bg-white.rounded-3xl.border,
+  .bg-white.rounded-2xl.overflow-hidden.border, .bg-white.rounded-xl.border {
+    box-shadow: var(--shadow-card);
+    transition: box-shadow .28s var(--ease-premium), transform .28s var(--ease-premium);
+  }
+  [data-theme="dark"] .bg-white.border.rounded-2xl, [data-theme="dark"] .bg-white.border.rounded-3xl,
+  [data-theme="dark"] .bg-white.rounded-2xl.border, [data-theme="dark"] .bg-white.rounded-3xl.border,
+  [data-theme="dark"] .bg-white.rounded-2xl.overflow-hidden.border, [data-theme="dark"] .bg-white.rounded-xl.border {
+    box-shadow: var(--shadow-card);
+  }
+
+  /* primary black actions: quiet luminance gradient + a real shadow instead of flat ink */
+  button.bg-gray-950.text-white, a.bg-gray-950.text-white {
+    background-image: var(--grad-ink);
+    box-shadow: var(--shadow-btn);
+  }
+  button.bg-gray-950.text-white:active, a.bg-gray-950.text-white:active { box-shadow: var(--shadow-xs); }
+
+  /* sheets + confirm dialogs float with real depth above the scrim */
+  .fixed.inset-0.z-50 .rounded-3xl, .fixed.inset-0 .rounded-3xl { box-shadow: var(--shadow-float); }
+
+  /* quiet fade + rise on every screen change, app-wide (see key={view} on shell wrappers) */
+  @keyframes moterViewEnter { from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:translateY(0);} }
+  .view-transition { animation: moterViewEnter .42s var(--ease-premium); }
+
+  /* staggered entrance for the role picker on the welcome screen */
+  @keyframes moterRoleIn { from{ opacity:0; transform:translateY(14px) scale(.98);} to{ opacity:1; transform:translateY(0) scale(1);} }
+  .role-stagger button { animation: moterRoleIn .5s var(--ease-premium) backwards; }
+  .role-stagger button:nth-of-type(1){ animation-delay:.05s; }
+  .role-stagger button:nth-of-type(2){ animation-delay:.13s; }
+  .role-stagger button:nth-of-type(3){ animation-delay:.21s; }
+
+  /* more considered splash: soft depth on the mark, gentle text rise */
+  .moter-splash-icon { box-shadow: 0 20px 44px -12px rgba(0,0,0,.55); }
+  @keyframes moterTextIn { from{ opacity:0; transform:translateY(7px);} to{ opacity:1; transform:translateY(0);} }
+  .moter-splash h1 { animation: moterTextIn .5s var(--ease-premium) .22s backwards; }
+
+  /* subtle precision: crisper focus ring, calmer disabled state */
+  button:focus-visible, a:focus-visible { outline-offset: 3px; }
+
+  /* welcome hero: quiet radial depth behind the mark instead of a flat block */
+  .hero-surface { position:relative; overflow:hidden; }
+  .hero-surface::before {
+    content:''; position:absolute; inset:-20% -20% auto -20%; height:75%;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.10), rgba(255,255,255,0) 68%);
+    pointer-events:none;
+  }
+  .hero-surface > * { position:relative; }
+
+  /* موجة متحركة عند حافة الشاشة الترحيبية — طبقتان بسرعتين واتجاهين متعاكسين
+     لإحساس عمق حي، حلقة سلسة تماماً (translateX من 0 إلى 50%- على نمط مكرر مرتين) */
+  .hero-wave-wrap { position:absolute; left:0; right:0; bottom:0; height:56px; overflow:hidden; pointer-events:none; z-index:1; }
+  .hero-wave { position:absolute; bottom:0; left:0; width:200%; height:100%; display:block; }
+  .hero-wave-back { animation: heroWaveDrift 9s linear infinite; opacity:.4; }
+  .hero-wave-front { animation: heroWaveDrift 5.5s linear infinite reverse; opacity:.9; bottom:-6px; }
+  @keyframes heroWaveDrift { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+
+  @media (prefers-reduced-motion: reduce){
+    .view-transition, .role-stagger button, .moter-splash h1, .moter-splash-icon, .moter-tl-pulse,
+    .moter-shake, .moter-picker-pin-idle, .hero-wave-back, .hero-wave-front { animation:none !important; }
+  }
