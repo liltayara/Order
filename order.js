@@ -1062,7 +1062,11 @@ function DeliveryTimeline({ order, role = "customer", eta, variant = "full" }) {
                 state==="done" ? "bg-gray-950 text-white" : state==="current" ? "bg-gray-950 text-white moter-tl-pulse" : "bg-gray-100 text-gray-300"}`}>
                 <Ic size={15} strokeWidth={2.4}/>
               </div>
-              {!isLast && <div className="w-0.5 flex-1 rounded-full transition-colors duration-300" style={{minHeight:24, background: state==="done" ? "#0A0A0A" : "var(--bc-b)"}}/>}
+              {!isLast && (
+                <div className="moter-tl-connector w-0.5 flex-1 rounded-full transition-colors duration-300" style={{minHeight:24, background: state==="done" ? "#0A0A0A" : "var(--bc-b)"}}>
+                  {state === "current" && <div className="moter-tl-travel"/>}
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0 pt-1.5">
               <p className={`font-black text-sm ${state==="upcoming" ? "text-gray-300" : "text-gray-950"}`}>{label}</p>
@@ -1283,6 +1287,7 @@ function WelcomeScreen({ onSelect }) {
 
 // ── حقل هاتف سوداني موحّد (مفتاح +249 ثابت + 9 أرقام محلية) ────────────────────
 function SudanPhoneField({ value, onChange, error, label }) {
+  const valid = value.replace(/\D/g, "").length === 9;
   return (
     <div>
       {label && <label className="text-sm font-semibold text-gray-700 block mb-2">{label}</label>}
@@ -1290,10 +1295,13 @@ function SudanPhoneField({ value, onChange, error, label }) {
         <div className="border-2 rounded-xl px-3.5 flex items-center gap-1.5 flex-shrink-0 font-bold text-gray-500" style={{borderColor:"var(--bc-b)"}}>
           <span>+249</span>
         </div>
-        <input type="tel" inputMode="numeric" value={value} onChange={e=>onChange(e.target.value.replace(/\D/g,"").slice(0,9))}
-          placeholder="9XXXXXXXX" aria-invalid={!!error} aria-label={label || "رقم الهاتف"}
-          className="flex-1 min-w-0 border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors"
-          style={{borderColor: error ? "#EF4444" : (value?"var(--ink)":"var(--bc-b)")}}/>
+        <div className="relative flex-1 min-w-0">
+          <input type="tel" inputMode="numeric" value={value} onChange={e=>onChange(e.target.value.replace(/\D/g,"").slice(0,9))}
+            placeholder="9XXXXXXXX" aria-invalid={!!error} aria-label={label || "رقم الهاتف"}
+            className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none transition-colors"
+            style={{borderColor: error ? "#EF4444" : (value?"var(--ink)":"var(--bc-b)"), paddingLeft: valid ? 40 : undefined}}/>
+          {valid && <CheckCircle size={18} className="text-green-500 absolute left-3 top-1/2 -translate-y-1/2"/>}
+        </div>
       </div>
       {error && <p className="moter-field-error"><AlertCircle size={13}/> {error}</p>}
     </div>
@@ -1633,7 +1641,7 @@ function CHome({ setView, profile, activeOrder, setForm, onTrack }) {
         <div className="bg-gray-800 rounded-2xl p-5">
           <p className="text-gray-400 text-xs mb-1">خدمة التوصيل</p>
           <p className="font-black text-lg mb-4 flex items-center gap-2"><Bike size={19}/> وصّل أي شيء خلال دقائق</p>
-          <button onClick={startOrder} className="w-full bg-white text-gray-950 py-3 rounded-xl font-black text-sm active:scale-95 transition-transform">
+          <button onClick={startOrder} className="moter-cta-glow w-full bg-white text-gray-950 py-3 rounded-xl font-black text-sm active:scale-95 transition-transform">
             + اطلب توصيلة الآن
           </button>
         </div>
@@ -1664,6 +1672,10 @@ function CHome({ setView, profile, activeOrder, setForm, onTrack }) {
 //    تتكرر نفس آلية "موقعي الحالي" المستخدمة لنقطة الاستلام. المنطقة تُطابَق أولاً
 //    مع الأحياء المعروفة محلياً؛ فإن لم تُطابَق نُرمِّزها جغرافياً عبر Nominatim،
 //    فلا يبقى الخط والمسافة والسعر الحقيقي بلا نقطة تسليم حقيقية أبداً. ──────────
+function RequiredDot() {
+  return <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 align-middle mr-1.5" aria-hidden="true"/>;
+}
+
 function DropoffDetailsScreen({ initial, onConfirm, onCancel }) {
   useScrollLock(true);
   const [phone, setPhone] = useState((initial && initial.phone) || "");
@@ -1674,6 +1686,21 @@ function DropoffDetailsScreen({ initial, onConfirm, onCancel }) {
   const [errors, setErrors] = useState({});
   const [shakeKey, setShakeKey] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [areaFocused, setAreaFocused] = useState(false);
+  const blurTimer = useRef(null);
+
+  const areaSuggestions = useMemo(() => {
+    const q = area.trim();
+    if (!q) return [];
+    return NEIGHBORHOODS.filter(n => n.name.includes(q)).slice(0, 5);
+  }, [area]);
+  const showSuggestions = areaFocused && areaSuggestions.length > 0;
+
+  const pickSuggestion = (n) => {
+    clearTimeout(blurTimer.current);
+    setArea(n.name);
+    setAreaFocused(false);
+  };
 
   const validate = () => {
     const errs = {};
@@ -1716,35 +1743,76 @@ function DropoffDetailsScreen({ initial, onConfirm, onCancel }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-5 space-y-5">
-        <div key={errors.phone ? `ph-${shakeKey}` : "ph"} className={errors.phone ? "moter-shake" : ""}>
-          <SudanPhoneField value={phone} onChange={setPhone} error={errors.phone} label="رقم هاتف المستلم"/>
+      <div className="flex-1 overflow-auto p-5 space-y-4">
+        {/* بطاقة بيانات المستلم */}
+        <div className="bg-white border-2 rounded-2xl overflow-hidden" style={{borderColor: errors.phone ? "#EF4444" : "var(--bc-a)"}}>
+          <div className="px-4 pt-4 pb-1 flex items-center gap-2">
+            <User size={14} className="text-gray-400"/>
+            <p className="text-xs font-black text-gray-500 uppercase tracking-wider">بيانات المستلم</p>
+          </div>
+          <div className="p-4 pt-3" key={errors.phone ? `ph-${shakeKey}` : "ph"}>
+            <div className={errors.phone ? "moter-shake" : ""}>
+              <SudanPhoneField value={phone} onChange={setPhone} error={errors.phone} label={<><RequiredDot/>رقم هاتف المستلم</>}/>
+            </div>
+          </div>
+          <div className="px-4 pb-4">
+            <label className="text-sm font-semibold text-gray-700 block mb-2">اسم المستلم <span className="text-gray-300 font-normal text-xs">(اختياري — لشخص آخر)</span></label>
+            <div className="relative">
+              <User size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300"/>
+              <input value={name} onChange={e=>setName(e.target.value)} placeholder="مثال: أحمد محمد" aria-label="اسم المستلم"
+                className="w-full border-2 rounded-xl pr-11 pl-4 py-3.5 text-gray-950 placeholder-gray-300 focus:outline-none transition-colors" style={{borderColor:"var(--bc-b)"}}/>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label className="text-sm font-bold text-gray-700 block mb-2">اسم المستلم <span className="text-gray-300 font-normal">(اختياري — إن كان التوصيل لشخص آخر)</span></label>
-          <input value={name} onChange={e=>setName(e.target.value)} placeholder="مثال: أحمد محمد" aria-label="اسم المستلم"
-            className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-950 placeholder-gray-300 focus:outline-none transition-colors" style={{borderColor:"var(--bc-b)"}}/>
-        </div>
+        {/* بطاقة العنوان */}
+        <div className="bg-white border-2 rounded-2xl overflow-hidden" style={{borderColor: errors.area ? "#EF4444" : "var(--bc-a)"}}>
+          <div className="px-4 pt-4 pb-1 flex items-center gap-2">
+            <MapPin size={14} className="text-gray-400"/>
+            <p className="text-xs font-black text-gray-500 uppercase tracking-wider">العنوان</p>
+          </div>
 
-        <div key={errors.area ? `ar-${shakeKey}` : "ar"} className={errors.area ? "moter-shake" : ""}>
-          <label className="text-sm font-bold text-gray-700 block mb-2">المنطقة</label>
-          <input value={area} onChange={e=>setArea(e.target.value)} placeholder="مثال: بري" list="moterDropoffAreas" aria-label="المنطقة"
-            className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-950 placeholder-gray-300 focus:outline-none transition-colors" style={{borderColor: errors.area ? "#EF4444" : "var(--bc-b)"}}/>
-          <datalist id="moterDropoffAreas">{NEIGHBORHOODS.map(n => <option key={n.name} value={n.name}/>)}</datalist>
-          {errors.area && <p className="moter-field-error"><AlertCircle size={13}/> {errors.area}</p>}
-        </div>
+          <div className="p-4 pt-3 relative" key={errors.area ? `ar-${shakeKey}` : "ar"}>
+            <div className={errors.area ? "moter-shake" : ""}>
+              <label className="text-sm font-semibold text-gray-700 block mb-2"><RequiredDot/>المنطقة</label>
+              <div className="relative">
+                <MapPin size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300"/>
+                <input value={area}
+                  onChange={e=>setArea(e.target.value)}
+                  onFocus={()=>setAreaFocused(true)}
+                  onBlur={()=>{ blurTimer.current = setTimeout(()=>setAreaFocused(false), 150); }}
+                  placeholder="مثال: بري" aria-label="المنطقة" autoComplete="off"
+                  className="w-full border-2 rounded-xl pr-11 pl-4 py-3.5 text-gray-950 placeholder-gray-300 focus:outline-none transition-colors" style={{borderColor: errors.area ? "#EF4444" : "var(--bc-b)"}}/>
+                {showSuggestions && (
+                  <div className="absolute z-10 top-full mt-1.5 left-0 right-0 bg-white border-2 rounded-xl overflow-hidden shadow-lg" style={{borderColor:"var(--bc-a)"}}>
+                    {areaSuggestions.map(n => (
+                      <button key={n.name} type="button" onMouseDown={e=>e.preventDefault()} onClick={()=>pickSuggestion(n)}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-right active:bg-gray-50 border-b last:border-b-0" style={{borderColor:"var(--bc-c)"}}>
+                        <MapPin size={14} className="text-gray-300 flex-shrink-0"/>
+                        <span className="text-sm font-semibold text-gray-800">{n.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {errors.area && <p className="moter-field-error"><AlertCircle size={13}/> {errors.area}</p>}
+            </div>
+          </div>
 
-        <div>
-          <label className="text-sm font-bold text-gray-700 block mb-2">الشارع <span className="text-gray-300 font-normal">(اختياري)</span></label>
-          <input value={street} onChange={e=>setStreet(e.target.value)} placeholder="مثال: شارع النيل" aria-label="الشارع"
-            className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-950 placeholder-gray-300 focus:outline-none transition-colors" style={{borderColor:"var(--bc-b)"}}/>
-        </div>
+          <div className="px-4 pb-3">
+            <label className="text-sm font-semibold text-gray-700 block mb-2">الشارع <span className="text-gray-300 font-normal text-xs">(اختياري)</span></label>
+            <div className="relative">
+              <Navigation size={15} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300"/>
+              <input value={street} onChange={e=>setStreet(e.target.value)} placeholder="مثال: شارع النيل" aria-label="الشارع"
+                className="w-full border-2 rounded-xl pr-11 pl-4 py-3.5 text-gray-950 placeholder-gray-300 focus:outline-none transition-colors" style={{borderColor:"var(--bc-b)"}}/>
+            </div>
+          </div>
 
-        <div>
-          <label className="text-sm font-bold text-gray-700 block mb-2">تفاصيل إضافية دقيقة <span className="text-gray-300 font-normal">(اختياري)</span></label>
-          <textarea value={details} onChange={e=>setDetails(e.target.value)} placeholder="مثال: بجانب المسجد، عمارة رقم 4، الدور الثاني..." rows={3} aria-label="تفاصيل إضافية"
-            className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-950 placeholder-gray-300 focus:outline-none transition-colors resize-none" style={{borderColor:"var(--bc-b)"}}/>
+          <div className="px-4 pb-4">
+            <label className="text-sm font-semibold text-gray-700 block mb-2">تفاصيل إضافية دقيقة <span className="text-gray-300 font-normal text-xs">(اختياري)</span></label>
+            <textarea value={details} onChange={e=>setDetails(e.target.value)} placeholder="مثال: بجانب المسجد، عمارة رقم 4، الدور الثاني..." rows={3} aria-label="تفاصيل إضافية"
+              className="w-full border-2 rounded-xl px-4 py-3.5 text-gray-950 placeholder-gray-300 focus:outline-none transition-colors resize-none" style={{borderColor:"var(--bc-b)"}}/>
+          </div>
         </div>
       </div>
 
@@ -1894,6 +1962,21 @@ function CPreview({ setView, form, profile, addOrder, onConfirmed }) {
   const distance = Math.max(haversineKm(form.pickupLoc, form.dropoffLoc), 0.6);
   const finalPrice = calcDeliveryPrice(distance);
 
+  // عدّاد السعر المتصاعد — يمنح لحظة اكتشاف السعر إحساساً حياً بدل ظهوره فجأة
+  const [displayedPrice, setDisplayedPrice] = useState(0);
+  useEffect(() => {
+    let raf;
+    const start = performance.now(), DUR = 700;
+    const step = (now) => {
+      const t = Math.min((now - start) / DUR, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplayedPrice(Math.round(finalPrice * eased));
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [finalPrice]);
+
   // عدد السائقين المتصلين الآن فعلياً — اشتراك حي حقيقي + تصفية حسب نبضة موقع حديثة
   useEffect(() => {
     const unsub = usersCol.where("role","==","driver").where("online","==",true)
@@ -1954,7 +2037,7 @@ function CPreview({ setView, form, profile, addOrder, onConfirmed }) {
             </div>
           </div>
           <div className="pt-4 grid grid-cols-3 gap-2 text-center">
-            {[[distance.toFixed(1),"كيلومتر"],["~"+Math.max(5,Math.round(distance*4)),"دقيقة"],[fmtNum(finalPrice),"ج.س"]].map(([v,l])=>(
+            {[[distance.toFixed(1),"كيلومتر"],["~"+Math.max(5,Math.round(distance*4)),"دقيقة"],[fmtNum(displayedPrice),"ج.س"]].map(([v,l])=>(
               <div key={l}><p className="text-2xl font-black text-gray-950">{v}</p><p className="text-xs text-gray-400">{l}</p></div>
             ))}
           </div>
