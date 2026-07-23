@@ -123,6 +123,15 @@
   .moter-strength-track { height:4px; border-radius:3px; background:var(--bc-b); overflow:hidden; }
   .moter-strength-fill { height:100%; border-radius:3px; transition: width .3s var(--ease-premium, ease), background-color .3s; }
 
+  /* توهج نابض خفيف حول زر "اطلب توصيلة الآن" الرئيسي — يلفت الانتباه بلا إزعاج */
+  @keyframes moterCtaGlow { 0%,100%{ box-shadow:0 0 0 0 rgba(255,255,255,.35); } 50%{ box-shadow:0 0 0 7px rgba(255,255,255,0); } }
+  .moter-cta-glow { animation: moterCtaGlow 2.4s ease-in-out infinite; }
+
+  /* نبضة ضوء متحركة على خط التتبع — تنتقل من الخطوة الحالية باتجاه القادمة */
+  .moter-tl-connector { position:relative; overflow:hidden; }
+  .moter-tl-travel { position:absolute; right:50%; top:-6px; transform:translateX(50%); width:6px; height:6px; border-radius:50%; background:#0A0A0A; animation: moterTravelPulse 1.6s ease-in-out infinite; }
+  @keyframes moterTravelPulse { 0%{ top:-6px; opacity:0; } 15%{ opacity:1; } 85%{ opacity:1; } 100%{ top:100%; opacity:0; } }
+
   /* ── هياكل تحميل (Skeleton) ── */
   @keyframes moterShimmer { 0%{ background-position:-200% 0; } 100%{ background-position:200% 0; } }
   .moter-skeleton { background:linear-gradient(90deg, #EDEDED 25%, #F6F6F6 37%, #EDEDED 63%); background-size:400% 100%;
@@ -214,5 +223,5 @@
 
   @media (prefers-reduced-motion: reduce){
     .view-transition, .role-stagger button, .moter-splash h1, .moter-splash-icon, .moter-tl-pulse,
-    .moter-shake, .moter-picker-pin-idle, .hero-wave-back, .hero-wave-front { animation:none !important; }
+    .moter-shake, .moter-picker-pin-idle, .hero-wave-back, .hero-wave-front, .moter-cta-glow, .moter-tl-travel { animation:none !important; }
   }
