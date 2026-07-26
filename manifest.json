@@ -1,7 +1,7 @@
 {
   "name": "Order",
   "short_name": "Order",
-  "description": "اطلب توصيل بالموتوسيكل وتتبع سائقك لحظة بلحظة على الخريطة",
+  "description": "اطلب توصيل عجلة موتر وتتبع طلباتك لحظة بلحظة على الخريطة",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
