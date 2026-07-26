@@ -468,16 +468,16 @@ function isValidSudanPhone(digits) {
   if (d.length !== 9) return false;
   if (d[0] !== "9" && d[0] !== "1") return false;
   if (/^(\d)\1{8}$/.test(d)) return false; // نفس الرقم مكرراً 9 مرات
-  if (d === "123456789" || d === "987654321") return false;
+  if (d === "0" || d === "2" || d == "4" || d == "5"|| d == "6"|| d == "7"|| d == "8" ) return false;
   return true;
 }
 
 // كشف شركة الاتصالات من أول رقمين — لعرض اسم الشريحة فقط، لا لرفض أي رقم؛ القائمة
 // قد لا تغطي كل التخصيصات الحديثة، فلا نعتمد عليها أبداً كشرط قبول أو رفض.
 const SUDAN_CARRIERS = [
-  { prefixes:["91","92","99","12"], name:"Zain",   color:"#7C3AED" },
-  { prefixes:["90","96","97"],      name:"MTN",    color:"#EAB308" },
-  { prefixes:["98","15","18"],      name:"Sudani", color:"#0EA5E9" },
+  { prefixes:["91","90","96"], name:"Zain",   color:"#7C3AED" },
+  { prefixes:["99","93","92"], name:"MTN",    color:"#EAB308" },
+  { prefixes:["11","12","10"], name:"Sudani", color:"#0EA5E9" },
 ];
 function detectCarrier(digits) {
   const d = String(digits || "").replace(/\D/g, "");
